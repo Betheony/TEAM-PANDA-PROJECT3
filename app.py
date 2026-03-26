@@ -9,12 +9,13 @@ app = Flask(__name__)
 login_path = "admin/login_ui.html"
 customer_path = "customer/customer_ui.html"
 
-
+# Bring up the login page when the index is accessed.
 @app.route("/")
-def index():
+def login():
     return render_template(login_path)
 
 
+# Return the Customer UI when /customer is accessed.
 @app.route("/customer")
 def customer():
 
