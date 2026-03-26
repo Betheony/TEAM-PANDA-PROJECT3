@@ -1,0 +1,25 @@
+
+body {
+
+    font-family: sans-serif;
+
+    background-color: thistle;
+}
+
+/* Code for displaying menu items in a grid. */
+.container {
+    
+  display: grid;
+  grid-template-columns: auto auto auto;
+  background-color: dodgerblue;
+  padding: 10px;
+}
+.container div {
+  background-color: #f1f1f1;
+  border: 1px solid black;
+
+  margin: 10px;
+  padding: 10px;
+
+  text-align: center;
+}

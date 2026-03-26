@@ -1,10 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- General website setup stuff. Declaring the stylesheet and JS imports. -->
     <title>Customer Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='customer/customer_stylesheet.css') }}">
+    <script src="{{ url_for('static', filename='customer/customer_app.js') }}"></script>
 </head>
 <body>
-    <h2>Customer interface</h2>
-    <p>This is a work in progress.</p>
+    <h2>Customer Interface</h2>
+    <p>Order your items here!!</p>
+
+    <!-- TODO: These need to be updated with the actual drink names. -->
+    <div class="container">
+        <div onclick="place_order_test()">Ancestral Samurai Sakura Tea</div>
+        <div>Iced Yurei Matcha</div>
+        <div>Patriotic Cold Brew</div>
+        <div>Bethany's Ballistic Boba Bash</div>
+        <div>Dr. Taele's Signature Smoothie</div>
+    </div>
+
 </body>
 </html>

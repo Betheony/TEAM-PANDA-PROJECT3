@@ -1,5 +1,9 @@
 
 Notes about Flask:
+
+* To run the app, do: python3 app.py
+* To connect to the local test server: http://127.0.0.1:5000
+
 * CSS files and JS files are stored in "static".
 * HTML files are stored in "templates".
 
