@@ -11,6 +11,8 @@
 
 let customer_cart = []
 
+// This struct matches Menu Item names to IDs.
+// Used for displaying cart items.
 let menu_id_to_name_struct = {
 
     "101": "Ancestral Samurai Sakura Tea",
