@@ -6,7 +6,7 @@ body {
     background-color: thistle;
 }
 
-/* Code for displaying menu items in a grid. */
+/* Code for displaying selectable menu items in a grid. */
 .container {
     
   display: grid;
@@ -16,10 +16,20 @@ body {
 }
 .container div {
   background-color: #f1f1f1;
-  border: 1px solid black;
+  border: 3px solid black;
 
   margin: 10px;
   padding: 10px;
 
   text-align: center;
+}
+
+/* Code for everything stored within a cart. */
+.cart {
+
+  background-color: #f1f1f1;
+  border: 5px solid black;
+
+  margin: 5px;
+  padding: 5px;
 }
