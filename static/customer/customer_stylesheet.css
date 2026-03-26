@@ -1,20 +1,24 @@
 
 body {
 
-    font-family: sans-serif;
+  font-family: sans-serif;
 
-    background-color: thistle;
+  background-color: thistle;
+
+  cursor: url("images/happy_taele.jpg") 15 15, auto;
 }
 
 /* Code for displaying selectable menu items in a grid. */
-.container {
+.menu_item_container {
     
   display: grid;
   grid-template-columns: auto auto auto;
   background-color: dodgerblue;
   padding: 10px;
 }
-.container div {
+
+.menu_item_container div {
+
   background-color: #f1f1f1;
   border: 3px solid black;
 
@@ -22,6 +26,12 @@ body {
   padding: 10px;
 
   text-align: center;
+
+  transition: 0.2s;
+}
+.menu_item_container div:hover {
+
+  background-color: greenyellow;
 }
 
 /* Code for everything stored within a cart. */
@@ -32,4 +42,24 @@ body {
 
   margin: 5px;
   padding: 5px;
+}
+/* Styling for the different cart tools, such as clearing the cart. */
+.cart .cart_operations li {
+
+  list-style-type: none;
+  display: inline-block;
+
+  padding: 10px;
+  padding-right: 15px;
+
+
+  font-size: 30px;
+  font-weight: bold;
+
+  border-right: 4px solid black;
+}
+
+.cart .cart_operations li:last-child {
+
+  border-right: none;
 }

@@ -12,7 +12,8 @@
 
     <!-- TODO: These need to be updated with the actual drink names. -->
     <!-- TODO: The drink IDs need to be replaced with the actual Menu Item IDs. -->
-    <div class="container">
+    <div class="menu_item_container">
+
         <div onclick="add_item_to_cart('101')">Ancestral Samurai Sakura Tea</div>
         <div onclick="add_item_to_cart('102')">Iced Yurei Matcha</div>
         <div onclick="add_item_to_cart('103')">Patriotic Cold Brew</div>
@@ -22,7 +23,12 @@
 
     <!-- Anything that the customer orders should be displayed here. -->
     <div class="cart">
-        <h1>Cart</h1>
+
+        <ul class="cart_operations">
+
+            <li>Cart</li>
+            <li onclick="clear_cart()">Clear Cart</li>
+        </ul>
 
         <!-- This is the DIV that is used to list the cart items. -->
         <!-- Used in "customer_app.js" -->
