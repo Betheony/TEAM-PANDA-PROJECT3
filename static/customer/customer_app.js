@@ -22,6 +22,17 @@ let menu_id_to_name_struct = {
     "105": "Dr. Taele's Signature Smoothie"
 }
 
+// This struct matches Menu Item prices to IDs.
+// Used for displaying the total cost.
+let menu_id_to_price_struct = {
+
+    "101": 10,
+    "102": 20,
+    "103": 30,
+    "104": 40,
+    "105": 987654.3210
+}
+
 // This is a function that adds an item to a cart.
 function add_item_to_cart( _item ) {
 
