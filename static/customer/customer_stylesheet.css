@@ -1,79 +1,71 @@
-
 body {
-
   font-family: sans-serif;
-
   background-color: thistle;
-
-  cursor: url("images/happy_taele.jpg") 15 15, auto;
 }
 
 /* Code for displaying selectable menu items in a grid. */
 .menu_item_container {
-    
   display: grid;
   grid-template-columns: auto auto auto;
-  background-color: none;
   padding: 10px;
-
   font-weight: bold;
 }
 
-.menu_item_container div {
-
+.menu_item_container button {
   background-color: #f1f1f1;
   border: 3px solid black;
-
   margin: 10px;
   padding: 10px;
-
   text-align: center;
-
   transition: 0.2s;
+  font: inherit;
+  cursor: pointer;
 }
-.menu_item_container div:hover {
 
+.menu_item_container button:hover,
+.menu_item_container button:focus {
   background-color: greenyellow;
+}
+
+.menu_item_container button:focus-visible,
+.cart_operations button:focus-visible {
+  outline: 3px solid black;
+  outline-offset: 3px;
 }
 
 /* Code for everything stored within a cart. */
 .cart {
-
   background-color: #f1f1f1;
   border: 5px solid black;
-
   transition: 0.2s;
 }
 
 .cart p {
-
   font-size: 20px;
 }
 
-/* Styling for the different cart tools, such as clearing the cart. */
-.cart .cart_operations li {
-
-  list-style-type: none;
-  display: inline-block;
-
-  padding: 10px;
-  padding-right: 15px;
-
-
-  font-size: 30px;
-  font-weight: bold;
-
-  border-right: 4px solid black;
+.cart_centered {
+  text-align: center;
 }
 
-.cart .cart_operations li:last-child {
+/* Styling for the different cart tools, such as clearing the cart. */
+.cart_operations button {
+  background: none;
+  border: none;
+  border-right: 4px solid black;
+  padding: 10px 15px 10px 10px;
+  font-size: 30px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
 
+.cart_operations button:last-child {
   border-right: none;
-  
   padding-right: 10px;
 }
 
-.cart .cart_operations li:hover {
-
-  color: lightblue;
+.cart_operations button:hover,
+.cart_operations button:focus {
+  color: blue;
 }
