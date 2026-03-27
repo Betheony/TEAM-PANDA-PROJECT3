@@ -19,8 +19,9 @@ let menu_id_to_name_struct = {
     "102": "Iced Yurei Matcha",
     "103": "Patriotic Cold Brew",
     "104": "Bethany's Ballistic Boba Bash",
-    "105": "Dr. Taele's Signature Smoothie"
-}
+    "105": "Dr. Taele's Signature Smoothie",
+    "106": "Anaya's Dubious Dubai Chocolate Milkshake"
+};
 
 // This struct matches Menu Item prices to IDs.
 // Used for displaying the total cost.
@@ -30,34 +31,21 @@ let menu_id_to_price_struct = {
     "102": 20,
     "103": 30,
     "104": 40,
-    "105": 987654.3210
-}
+    "105": 987654.3210,
+    "106": 222.22
+};
 
 // This is a function that adds an item to a cart.
-function add_item_to_cart( _item ) {
+function add_item_to_cart(_item) {
 
-    customer_cart.push( parseInt( _item ) );
-    show_cart_contents();
-}
-
-// Function to update the cart contents, which are shown on-screen.
-// TODO: Make it so that group counts are displayed, not individual items.
-// Ex. Have "2x Cold Brew" instead of 2 separate "Cold Brew" listings.
-function show_cart_contents() {
-
-    var _innerHTMLstring = "";
-    for( var _i = 0; _i < customer_cart.length; _i++ ) {
-
-        _innerHTMLstring = _innerHTMLstring + "<p>" + menu_id_to_name_struct[ customer_cart.at(_i) ] + "</p>";
-    }
-
-    document.getElementById("cart_items").innerHTML = _innerHTMLstring;
+    customer_cart.push(parseInt(_item));
+    update_cart();
 }
 
 // This function deletes everything in the cart array and then displays the now empty cart.
 function clear_cart() {
 
-    for( var i = 0; i < customer_cart.length; i++ ) {
+    for (var i = 0; i < customer_cart.length; i++) {
 
         delete customer_cart[i];
     }
@@ -65,5 +53,40 @@ function clear_cart() {
     customer_cart = []
     customer_cart.length = 0;
 
-    show_cart_contents();
+    update_cart();
+}
+
+// Sums the total price of everything in the cart so that the customer knows how much they'll have to pay.
+function calculate_total_price() {
+
+    var _price = 0;
+
+    for (var i = 0; i < customer_cart.length; i++) {
+
+        _price += menu_id_to_price_struct[customer_cart.at(i)];
+    }
+
+    console.log("<p>Total Cost: $" + _price + "</p>");
+
+    return "<p>Total Cost: $" + _price + "</p>";
+}
+
+// Function to update the cart contents, which are shown on-screen.
+// TODO: Make it so that group counts are displayed, not individual items.
+// Ex. Have "2x Cold Brew" instead of 2 separate "Cold Brew" listings.
+function compute_cart_contents() {
+
+    var _innerHTMLstring = "";
+    for (var _i = 0; _i < customer_cart.length; _i++) {
+
+        _innerHTMLstring = _innerHTMLstring + "<p>" + menu_id_to_name_struct[customer_cart.at(_i)] + "</p>";
+    }
+
+    return _innerHTMLstring;
+}
+
+function update_cart() {
+
+    document.getElementById("total_price").innerHTML = calculate_total_price();
+    document.getElementById("cart_items").innerHTML = compute_cart_contents();
 }

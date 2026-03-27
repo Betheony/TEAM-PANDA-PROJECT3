@@ -19,20 +19,25 @@
         <div onclick="add_item_to_cart('103')">Patriotic Cold Brew</div>
         <div onclick="add_item_to_cart('104')">Bethany's Ballistic Boba Bash</div>
         <div onclick="add_item_to_cart('105')">Dr. Taele's Signature Smoothie</div>
+        <div onclick="add_item_to_cart('106')">Anaya's Dubious Dubai Chocolate Milkshake</div>
     </div>
 
     <!-- Anything that the customer orders should be displayed here. -->
     <div class="cart">
 
+        
         <ul class="cart_operations">
 
-            <li>Cart</li>
             <li onclick="clear_cart()">Clear Cart</li>
+            <li>Submit Order</li>
         </ul>
 
+        
         <!-- This is the DIV that is used to list the cart items. -->
         <!-- Used in "customer_app.js" -->
         <div id="cart_items"></div>
+
+        <h1 id="total_price">Total Price: $0.00 USD</h1>
 
     </div>
 

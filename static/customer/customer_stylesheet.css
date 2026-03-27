@@ -42,8 +42,11 @@ body {
 
   margin: 5px;
   padding: 5px;
+
+  transition: 0.2s;
 }
 /* Styling for the different cart tools, such as clearing the cart. */
+
 .cart .cart_operations li {
 
   list-style-type: none;
@@ -62,4 +65,9 @@ body {
 .cart .cart_operations li:last-child {
 
   border-right: none;
+}
+
+.cart .cart_operations li:hover {
+
+  color: lightblue;
 }
