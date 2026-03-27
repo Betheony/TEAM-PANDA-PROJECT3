@@ -10,34 +10,37 @@
     <h2>Customer Interface</h2>
     <p>Order your items here!!</p>
 
-    <!-- TODO: These need to be updated with the actual drink names. -->
-    <!-- TODO: The drink IDs need to be replaced with the actual Menu Item IDs. -->
-    <div class="menu_item_container">
-
-        <div onclick="add_item_to_cart('101')">Ancestral Samurai Sakura Tea</div>
-        <div onclick="add_item_to_cart('102')">Iced Yurei Matcha</div>
-        <div onclick="add_item_to_cart('103')">Patriotic Cold Brew</div>
-        <div onclick="add_item_to_cart('104')">Bethany's Ballistic Boba Bash</div>
-        <div onclick="add_item_to_cart('105')">Dr. Taele's Signature Smoothie</div>
-        <div onclick="add_item_to_cart('106')">Anaya's Dubious Dubai Chocolate Milkshake</div>
-    </div>
-
     <!-- Anything that the customer orders should be displayed here. -->
     <div class="cart">
 
+        <!-- TODO: These need to be updated with the actual drink names. -->
+        <!-- TODO: The drink IDs need to be replaced with the actual Menu Item IDs. -->
+        <div class="menu_item_container">
+
+            <div onclick="add_item_to_cart('101')">Ancestral Samurai Sakura Tea</div>
+            <div onclick="add_item_to_cart('102')">Iced Yurei Matcha</div>
+            <div onclick="add_item_to_cart('103')">Patriotic Cold Brew</div>
+            <div onclick="add_item_to_cart('104')">Bethany's Ballistic Boba Bash</div>
+            <div onclick="add_item_to_cart('105')">Dr. Taele's Signature Smoothie</div>
+            <div onclick="add_item_to_cart('106')">Anaya's Dubious Dubai Chocolate Milkshake</div>
+        </div>
         
-        <ul class="cart_operations">
+        <center>
+            
+            <ul class="cart_operations">
 
-            <li onclick="clear_cart()">Clear Cart</li>
-            <li>Submit Order</li>
-        </ul>
+                <li onclick="clear_cart()">Clear Cart</li>
+                <li>Submit Order</li>
+            </ul>
 
-        
-        <!-- This is the DIV that is used to list the cart items. -->
-        <!-- Used in "customer_app.js" -->
-        <div id="cart_items"></div>
+            
+            <!-- This is the DIV that is used to list the cart items. -->
+            <!-- Used in "customer_app.js" -->
+            <div id="cart_items"></div>
 
-        <h1 id="total_price">Total Price: $0.00 USD</h1>
+            <h1 id="total_price">Total Price: $0.00</h1>
+
+        </center>
 
     </div>
 

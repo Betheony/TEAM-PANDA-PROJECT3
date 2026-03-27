@@ -66,9 +66,7 @@ function calculate_total_price() {
         _price += menu_id_to_price_struct[customer_cart.at(i)];
     }
 
-    console.log("<p>Total Cost: $" + _price + "</p>");
-
-    return "<p>Total Cost: $" + _price + "</p>";
+    return "Total Price: $" + _price;
 }
 
 // Function to update the cart contents, which are shown on-screen.
