@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import "./ManagerView.css";
 
 interface Employee {
   employee_id: number;
