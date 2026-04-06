@@ -55,6 +55,13 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       .catch(() => setError("Failed to load menu"));
   }, []);
 
+  const getImageSrc = (item: MenuItem) => {
+    if (item.image_url && item.image_url.trim() !== "") {
+      return item.image_url;
+    }
+    return null;
+  };
+
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
     setSelectedToppings([]);
@@ -154,7 +161,15 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
               onClick={() => openModal(item)}
               className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left border border-orange-100 hover:border-pink-300 hover:-translate-y-0.5"
             >
-              <div className="text-4xl mb-2">🧋</div>
+              {getImageSrc(item) ? (
+                <img
+                  src={getImageSrc(item)!}
+                  alt={item.name}
+                  className="w-full h-32 object-cover rounded-lg mb-2"
+                />
+              ) : (
+                <div className="text-4xl mb-2">🧋</div>
+              )}
               <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2">
                 {item.name}
               </h3>
