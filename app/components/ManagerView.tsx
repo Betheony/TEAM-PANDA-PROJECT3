@@ -241,6 +241,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
                 <p className="text-lg">No orders found</p>
               </div>
             ) : (
+
+              /* This massive DIV is the big list of orders and their various components. */
               <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-amber-50 border-b border-orange-100">
@@ -263,7 +265,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                       return (
                         <tr
                           key={order.order_id}
-                          className={`border-b border-gray-50 ${
+                          className={`border-b border-black-5 ${
                             idx % 2 === 0 ? "" : "bg-gray-50/50"
                           }`}
                         >
@@ -291,13 +293,16 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               {order.order_status}
                             </span>
                           </td>
+
+                          {/* These are all the "Actions" dropdown menus that appear next to an Order. */}
                           <td className="px-4 py-3">
+              
                             <select
                               value={order.order_status}
                               onChange={(e) =>
                                 updateOrderStatus(order.order_id, e.target.value)
                               }
-                              className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="text-s font-bold text-black bg-white border-2 border-black rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
                             >
                               {["pending","preparing","ready","completed","cancelled","refunded"].map((s) => (
                                 <option key={s} value={s}>
