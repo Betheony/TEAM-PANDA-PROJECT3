@@ -142,14 +142,17 @@ export default function ManagerView({ employee, onLogout }: Props) {
         This controls the top bar that has "Logged in as [ employee ]. */}
       <header className="bg-[#dd0282] px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🧋</span>
+          { /* <span className="text-3xl">🧋</span> */ }
           <div>
 
-            {/* Employee rank & details section */}
-            <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
-            <p className="text-xl text-white-500">
-              Logged in as <span className="font-semibold">{employee.name}</span>
-            </p>
+            <div className="bg-black/20 p-5 rounded-lg">
+
+              {/* Employee rank & details section */}
+              <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
+              <p className="text-xl text-white-500">
+                Logged in as <span className="font-semibold">{employee.name}</span>
+              </p>
+            </div>
           </div>
         </div>
 
