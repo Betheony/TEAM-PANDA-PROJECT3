@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 interface Employee {
   employee_id: number;
@@ -8,11 +9,10 @@ interface Employee {
 }
 
 interface Props {
-  onCustomerSelect: () => void;
   onEmployeeLogin: (employee: Employee) => void;
 }
 
-export default function LoginScreen({ onCustomerSelect, onEmployeeLogin }: Props) {
+export default function LoginScreen({ onEmployeeLogin }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -53,7 +53,7 @@ export default function LoginScreen({ onCustomerSelect, onEmployeeLogin }: Props
 
         <div className="space-y-4">
           <button
-            onClick={onCustomerSelect}
+            onClick={() => signIn("google")}
             className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
           >
             Order as Customer

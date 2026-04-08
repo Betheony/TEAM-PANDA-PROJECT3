@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import LoginScreen from "./components/LoginScreen";
 import CustomerView from "./components/CustomerView";
 import CashierView from "./components/CashierView";
@@ -14,6 +15,7 @@ interface Employee {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const [view, setView] = useState<View>("login");
   const [employee, setEmployee] = useState<Employee | null>(null);
 
@@ -22,10 +24,12 @@ export default function Home() {
     setView("login");
   };
 
+  // Google-authenticated customers go straight to CustomerView
+  if (session) return <CustomerView onLogout={handleLogout} />;
+
   if (view === "login") {
     return (
       <LoginScreen
-        onCustomerSelect={() => setView("customer")}
         onEmployeeLogin={(emp) => {
           setEmployee(emp);
           setView(emp.role as View);
@@ -34,7 +38,6 @@ export default function Home() {
     );
   }
 
-  if (view === "customer") return <CustomerView onLogout={handleLogout} />;
   if (view === "cashier") return <CashierView employee={employee!} onLogout={handleLogout} />;
   if (view === "manager") return <ManagerView employee={employee!} onLogout={handleLogout} />;
 
