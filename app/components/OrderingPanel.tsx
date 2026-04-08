@@ -44,16 +44,34 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   const [placing, setPlacing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetch("/api/menu")
       .then((r) => r.json())
       .then((data) => {
-        setMenuItems(data.menuItems || []);
+        const items: MenuItem[] = data.menuItems || [];
+        setMenuItems(items);
         setToppings(data.toppings || []);
+        const imageCount = items.filter((i) => i.image_url?.trim()).length;
+        if (imageCount === 0) setLoading(false);
       })
-      .catch(() => setError("Failed to load menu"));
+      .catch(() => { setError("Failed to load menu"); setLoading(false); });
   }, []);
+
+  useEffect(() => {
+    if (menuItems.length === 0) return;
+    let loaded = 0;
+    const imageItems = menuItems.filter((i) => i.image_url?.trim());
+    if (imageItems.length === 0) return;
+    imageItems.forEach((item) => {
+        const img = new Image();
+        img.onload = img.onerror = () => {
+          loaded += 1;
+          if (loaded >= imageItems.length) setLoading(false);
+        };
+        img.src = item.image_url!;
+      });
+  }, [menuItems]);
 
   const getImageSrc = (item: MenuItem) => {
     if (item.image_url && item.image_url.trim() !== "") {
@@ -148,7 +166,12 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   };
 
   return (
-    <div className="flex gap-4 h-full min-h-0">
+    <div className="flex gap-4 h-full min-h-0 relative">
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
+      )}
       {/* Menu grid */}
       <div className="flex-1 overflow-y-auto pr-1">
         {error && (
