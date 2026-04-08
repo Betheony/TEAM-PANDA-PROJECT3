@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface MenuItem {
   menu_item_id: number;
@@ -168,7 +169,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   return (
     <div className="flex gap-4 h-full min-h-0 relative">
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#6b5d5a]/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
