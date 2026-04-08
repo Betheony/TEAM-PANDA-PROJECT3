@@ -321,6 +321,10 @@ export default function ManagerView({ employee, onLogout }: Props) {
           </div>
         ) : (
           <div>
+
+            {/* This massive DIV controls the Inventory display, including displaying Ingredient Names, stock, updating, etc.. */}
+            {/* It has its own Div to keep it separate from the Orders, and to also display it separately when called. */}
+
             {error && (
               <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>
             )}
@@ -336,6 +340,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   </tr>
                 </thead>
                 <tbody>
+  
                   {ingredients.map((ing, idx) => {
                     const pct = ing.target_qty > 0
                       ? Math.min(100, (ing.qty_in_stock / ing.target_qty) * 100)
@@ -343,12 +348,19 @@ export default function ManagerView({ employee, onLogout }: Props) {
                     const low = ing.qty_in_stock < ing.target_qty * 0.3;
                     const medium = !low && ing.qty_in_stock < ing.target_qty * 0.7;
                     return (
+                      
+                      /* This label displays the Ingredient Name. */
+                      /* It uses a Key-Value pair system from "ing" to display the ingredient based on its ID. 
+                        It uses key-value pairs to keep the ingredients organized with unique IDs to prevent confusion
+                        in case there are ingredients with similar names. */
                       <tr
                         key={ing.ingredient_id}
                         className={`border-b border-gray-50 ${
                           idx % 2 === 0 ? "" : "bg-gray-50/50"
                         }`}
                       >
+
+                        {/* "LOW" label that appears next to the ingredient when it needs restocking. */}
                         <td className="px-4 py-3 font-medium text-gray-800">
                           {ing.name}
                           {low && (
@@ -357,12 +369,20 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             </span>
                           )}
                         </td>
+
+                        {/* Ingredient quantity in stock label */}
                         <td className="px-4 py-3 font-semibold text-gray-800">
                           {ing.qty_in_stock}
                         </td>
+
+                        {/* Target quantity label */}
                         <td className="px-4 py-3 text-gray-500">{ing.target_qty}</td>
+
+                        {/* Inventory tracker percentage bar */}
                         <td className="px-4 py-3 w-40">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+
+                          {/* This is the default value (when the inventory stock is at 0% for the ingredient) */}
+                          <div className="w-full bg-gray-300 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full transition-all ${
                                 low
@@ -374,10 +394,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <p className="text-xs text-gray-400 mt-1">{Math.round(pct)}%</p>
+                          <p className="text-xs text-black mt-1">{Math.round(pct)}%</p>
                         </td>
+
+                        {/* This section controls the tools that update the inventory stocks. */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
+
+                            {/* Text input to update the inventory stock. */}
                             <input
                               type="number"
                               min="0"
@@ -392,8 +416,10 @@ export default function ManagerView({ employee, onLogout }: Props) {
                                   [ing.ingredient_id]: e.target.value,
                                 }))
                               }
-                              className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="w-20 border border-black border-2 rounded-lg px-2 py-1 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500"
                             />
+
+                            {/* This button updates the stock count after being clicked. */}
                             <button
                               onClick={() => saveStock(ing.ingredient_id)}
                               disabled={
