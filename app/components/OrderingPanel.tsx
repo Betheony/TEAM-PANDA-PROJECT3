@@ -55,6 +55,13 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       .catch(() => setError("Failed to load menu"));
   }, []);
 
+  const getImageSrc = (item: MenuItem) => {
+    if (item.image_url && item.image_url.trim() !== "") {
+      return item.image_url;
+    }
+    return null;
+  };
+
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
     setSelectedToppings([]);
@@ -152,10 +159,20 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
             <button
               key={item.menu_item_id}
               onClick={() => openModal(item)}
-              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left border border-orange-100 hover:border-pink-300 hover:-translate-y-0.5"
+              className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left border border-orange-100 hover:border-pink-300 hover:-translate-y-0.5"
             >
-              <div className="text-4xl mb-2">🧋</div>
-              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2">
+              {getImageSrc(item) ? (
+                <div className="w-full h-52 rounded-lg mb-3 bg-orange-50 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={getImageSrc(item)!}
+                    alt={item.name}
+                    className="w-full h-auto max-h-full object-contain scale-190"
+                  />
+                </div>
+              ) : (
+                <div className="h-52 flex items-center justify-center text-4xl mb-3 bg-orange-50 rounded-lg">🧋</div>
+              )}
+              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-3">
                 {item.name}
               </h3>
               <p className="text-pink-600 font-bold mt-2">

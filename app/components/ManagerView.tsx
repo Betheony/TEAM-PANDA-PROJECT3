@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import "./ManagerView.css";
 
 interface Employee {
   employee_id: number;
@@ -132,28 +133,29 @@ export default function ManagerView({ employee, onLogout }: Props) {
     );
 
   return (
-    <div className="min-h-screen bg-amber-50 flex flex-col">
+    <div className="min-h-screen bg-purple-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-orange-100 px-6 py-4 flex items-center justify-between shadow-sm">
+      <header className="bg-black px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <span className="text-3xl">🧋</span>
           <div>
-            <h1 className="text-xl font-bold text-amber-900">Panda Tea — Manager</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
+            <p className="text-xl text-white-500">
               Logged in as <span className="font-semibold">{employee.name}</span>
             </p>
           </div>
         </div>
         <button
           onClick={onLogout}
-          className="text-sm text-gray-500 hover:text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+          className="text-m font-bold text-white-500 hover:text-gray-700 border-3 border-white-300 px-5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Logout
         </button>
       </header>
 
-      {/* Stats bar */}
-      <div className="bg-white border-b border-orange-100 px-6 py-3 flex gap-6">
+      { /* The below code controls the Stats Bar.
+      Includes Total Orders, Completed, Active, and Revenue. */ }
+      <div className="bg-white border-t-5 border-orange-200 px-6 py-3 flex justify-center gap-6">
         <div className="text-center">
           <p className="text-2xl font-bold text-pink-600">{orders.length}</p>
           <p className="text-xs text-gray-500">Total Orders</p>
@@ -177,15 +179,15 @@ export default function ManagerView({ employee, onLogout }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-orange-100 px-6">
-        <div className="flex gap-0">
+      <div className="bg-white border-b-5 border-t-0 border-l-0 border-r-0 border-orange-200">
+        <div className="flex justify-center gap-0">
           {(["orders", "inventory"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors capitalize ${
                 tab === t
-                  ? "border-pink-500 text-pink-600"
+                  ? "border-pink-500 border-b-4 text-pink-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -199,7 +201,11 @@ export default function ManagerView({ employee, onLogout }: Props) {
       <main className="flex-1 p-6 overflow-y-auto">
         {tab === "orders" ? (
           <div>
-            {/* Status filter */}
+            {
+            /* Below is the Status Filter. */
+            /* This code controls the Status Filter colors, size, dimensions, etc.. */
+            /* It's necessary for giving fine control over the various filters. */
+            }
             <div className="flex gap-2 flex-wrap mb-5">
               {ALL_STATUSES.map((s) => (
                 <button
@@ -207,8 +213,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
                     statusFilter === s
-                      ? "bg-pink-500 text-white"
-                      : "bg-white border border-gray-300 text-gray-600 hover:border-pink-300"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white border-3 border-black-300 text-black hover:border-green-300"
                   }`}
                 >
                   {s}
