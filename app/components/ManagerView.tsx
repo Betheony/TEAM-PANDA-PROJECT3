@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import "./ManagerView.css";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface Employee {
   employee_id: number;
@@ -58,6 +59,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [editStock, setEditStock] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -79,13 +81,22 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
   // Real-time polling every 5 seconds
   useEffect(() => {
-    fetchOrders();
-    fetchIngredients();
+    let isMounted = true;
+    const loadInitialData = async () => {
+      await Promise.allSettled([fetchOrders(), fetchIngredients()]);
+      if (isMounted) setLoading(false);
+    };
+
+    loadInitialData();
     const interval = setInterval(() => {
       fetchOrders();
       fetchIngredients();
     }, 5000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [fetchOrders, fetchIngredients]);
 
   const updateOrderStatus = async (orderId: number, status: string) => {
@@ -137,6 +148,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-purple-50 flex flex-col">
+      <LoadingOverlay show={loading} />
       
       {/* Header 
         This controls the top bar that has "Logged in as [ employee ]. */}

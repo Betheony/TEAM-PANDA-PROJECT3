@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import OrderingPanel from "./OrderingPanel";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface Employee {
   employee_id: number;
@@ -44,6 +45,7 @@ export default function CashierView({ employee, onLogout }: Props) {
   const [tab, setTab] = useState<"order" | "queue">("order");
   const [orders, setOrders] = useState<Order[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -57,9 +59,19 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   // Real-time polling every 5 seconds
   useEffect(() => {
-    fetchOrders();
+    let isMounted = true;
+    const loadInitialOrders = async () => {
+      await fetchOrders();
+      if (isMounted) setLoading(false);
+    };
+
+    loadInitialOrders();
     const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [fetchOrders, refreshKey]);
 
   const updateStatus = async (orderId: number, status: string) => {
@@ -87,6 +99,7 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-amber-50 flex flex-col">
+      <LoadingOverlay show={loading && tab === "queue"} />
       {/* Header */}
       <header className="bg-white border-b border-orange-100 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
