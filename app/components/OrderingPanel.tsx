@@ -168,24 +168,24 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   return (
     <div className="flex gap-4 h-full min-h-0 relative">
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#6b5d5a]/40 backdrop-blur-sm">
           <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
       {/* Menu grid */}
       <div className="flex-1 overflow-y-auto pr-1">
         {error && (
-          <p className="text-red-500 text-sm mb-3">{error}</p>
+          <p className="text-red-400 text-sm mb-3">{error}</p>
         )}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {menuItems.map((item) => (
             <button
               key={item.menu_item_id}
               onClick={() => openModal(item)}
-              className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left border border-orange-100 hover:border-pink-300 hover:-translate-y-0.5"
+              className="w-full bg-[#fffdfb] rounded-3xl p-4 hover:shadow-md transition-all text-left border border-[#e8e0db] hover:-translate-y-0.5"
             >
               {getImageSrc(item) ? (
-                <div className="w-full h-52 rounded-lg mb-3 bg-orange-50 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-52 rounded-2xl mb-3 bg-[#f5f0ec] flex items-center justify-center overflow-hidden">
                   <img
                     src={getImageSrc(item)!}
                     alt={item.name}
@@ -193,12 +193,12 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
                   />
                 </div>
               ) : (
-                <div className="h-52 flex items-center justify-center text-4xl mb-3 bg-orange-50 rounded-lg">🧋</div>
+                <div className="h-52 flex items-center justify-center text-4xl mb-3 bg-[#f5f0ec] rounded-2xl">🧋</div>
               )}
-              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-3">
+              <h3 className="text-[#6b5d5a] text-sm leading-tight line-clamp-3">
                 {item.name}
               </h3>
-              <p className="text-pink-600 font-bold mt-2">
+              <p className="text-[#c9a69c] mt-2">
                 ${Number(item.price).toFixed(2)}
               </p>
             </button>
@@ -207,52 +207,52 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       </div>
 
       {/* Cart */}
-      <div className="w-72 shrink-0 flex flex-col bg-white rounded-2xl shadow p-4 border border-orange-100 min-h-0">
-        <h2 className="text-lg font-bold text-amber-900 mb-3">Cart</h2>
+      <div className="w-72 shrink-0 flex flex-col bg-[#fffdfb] rounded-3xl p-5 border border-[#e8e0db] self-start max-h-[100vh] min-h-0">
+        <h2 className="text-xl text-[#6b5d5a] mb-4">your order</h2>
 
         {success && (
-          <div className="bg-green-50 border border-green-300 text-green-700 rounded-xl p-3 mb-3 text-sm font-medium">
-            ✅ Order placed successfully!
+          <div className="bg-[#f5f0ec] border border-[#c9a69c] text-[#6b5d5a] rounded-2xl p-3 mb-3 text-sm">
+            Order placed successfully!
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {cart.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center mt-10">
-              Cart is empty — tap a drink to add it!
+            <p className="text-[#b8aba6] text-sm text-center m-6 italic">
+              empty for now — tap a drink to add it
             </p>
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={item.key} className="border-b border-gray-100 pb-3">
+                <div key={item.key} className="border-b border-[#e8e0db] pb-3">
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm truncate">
+                      <p className="text-[#6b5d5a] text-sm truncate">
                         {item.name}
                       </p>
                       {item.toppings.length > 0 && (
-                        <p className="text-xs text-gray-400 truncate">
+                        <p className="text-xs text-[#b8aba6] truncate">
                           {item.toppings.map((t) => t.name).join(", ")}
                         </p>
                       )}
                     </div>
-                    <p className="text-pink-600 font-bold text-sm shrink-0">
+                    <p className="text-[#c9a69c] text-sm shrink-0">
                       ${(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => updateQty(item.key, -1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-red-100 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors"
+                      className="w-6 h-6 rounded-full bg-[#f5f0ec] border border-[#e8e0db] text-[#6b5d5a] text-sm flex items-center justify-center transition-colors"
                     >
                       −
                     </button>
-                    <span className="text-sm font-semibold w-5 text-center">
+                    <span className="text-sm text-[#6b5d5a] w-5 text-center">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQty(item.key, 1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-green-100 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors"
+                      className="w-6 h-6 rounded-full bg-[#f5f0ec] border border-[#e8e0db] text-[#6b5d5a] text-sm flex items-center justify-center transition-colors"
                     >
                       +
                     </button>
@@ -263,10 +263,10 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
           )}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-          <div className="flex justify-between font-bold text-gray-800">
-            <span>Total</span>
-            <span className="text-pink-600 text-lg">${total.toFixed(2)}</span>
+        <div className="pt-3 border-t border-[#e8e0db] space-y-3">
+          <div className="flex items-baseline justify-between px-1">
+            <span className="text-[#9a8d89] text-sm">total</span>
+            <span className="text-2xl text-[#6b5d5a]">${total.toFixed(2)}</span>
           </div>
 
           <div className="flex gap-2">
@@ -274,25 +274,25 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
               <button
                 key={m}
                 onClick={() => setPaymentMethod(m)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${
+                className={`flex-1 py-2 rounded-full text-sm transition-colors ${
                   paymentMethod === m
-                    ? "bg-purple-600 text-white"
-                    : "border border-gray-300 text-gray-600 hover:bg-gray-50"
+                    ? "bg-[#c9a69c] text-white"
+                    : "border border-[#e8e0db] text-[#b8aba6]"
                 }`}
               >
-                {m === "card" ? "💳 Card" : "💵 Cash"}
+                {m === "card" ? "card" : "cash"}
               </button>
             ))}
           </div>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-400 text-xs">{error}</p>}
 
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || placing}
-            className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-40 text-base"
+            className="w-full bg-[#c9a69c] hover:bg-[#b89689] text-white py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {placing ? "Placing…" : "Place Order"}
+            {placing ? "placing…" : "place order"}
           </button>
         </div>
       </div>
@@ -300,21 +300,21 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       {/* Topping modal */}
       {selectedItem && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-[#6b5d5a]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-800 mb-1">
+          <div className="bg-[#fffdfb] rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-[#e8e0db]">
+            <h3 className="text-2xl text-[#6b5d5a] mb-1">
               {selectedItem.name}
             </h3>
-            <p className="text-pink-600 font-bold text-xl mb-5">
+            <p className="text-[#c9a69c] mb-6">
               ${Number(selectedItem.price).toFixed(2)}
             </p>
 
             {toppings.length > 0 && (
-              <div className="mb-5">
-                <p className="font-semibold text-gray-700 mb-3">
-                  Add Toppings (optional)
+              <div className="mb-6">
+                <p className="text-[#9a8d89] text-sm lowercase mb-3">
+                  add something extra
                 </p>
                 <div className="space-y-2">
                   {toppings.map((t) => (
@@ -326,9 +326,9 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
                         type="checkbox"
                         checked={selectedToppings.includes(t.topping_id)}
                         onChange={() => toggleTopping(t.topping_id)}
-                        className="w-4 h-4 accent-pink-500"
+                        className="w-4 h-4 accent-[#c9a69c]"
                       />
-                      <span className="text-gray-700 group-hover:text-gray-900">
+                      <span className="text-[#6b5d5a] group-hover:text-[#6b5d5a]/80">
                         {t.name}
                       </span>
                     </label>
@@ -337,19 +337,19 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
               </div>
             )}
 
-            <div className="mb-5">
-              <p className="font-semibold text-gray-700 mb-3">Quantity</p>
+            <div className="mb-6">
+              <p className="text-[#9a8d89] text-sm lowercase mb-3">quantity</p>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setItemQty(Math.max(1, itemQty - 1))}
-                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-lg"
+                  className="w-9 h-9 rounded-full bg-[#f5f0ec] border border-[#e8e0db] text-[#6b5d5a] text-lg transition-colors"
                 >
                   −
                 </button>
-                <span className="font-bold text-xl w-8 text-center">{itemQty}</span>
+                <span className="text-xl text-[#6b5d5a] w-8 text-center">{itemQty}</span>
                 <button
                   onClick={() => setItemQty(itemQty + 1)}
-                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-lg"
+                  className="w-9 h-9 rounded-full bg-[#f5f0ec] border border-[#e8e0db] text-[#6b5d5a] text-lg transition-colors"
                 >
                   +
                 </button>
@@ -359,15 +359,15 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedItem(null)}
-                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 font-medium"
+                className="flex-1 border border-[#e8e0db] hover:border-[#c9a69c] text-[#b8aba6] py-3 rounded-full transition-colors"
               >
-                Cancel
+                cancel
               </button>
               <button
                 onClick={addToCart}
-                className="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl font-bold"
+                className="flex-1 bg-[#c9a69c] hover:bg-[#b89689] text-white py-3 rounded-full transition-colors"
               >
-                Add to Cart
+                add to order
               </button>
             </div>
           </div>
