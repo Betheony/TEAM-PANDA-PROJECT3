@@ -47,7 +47,10 @@ interface Props {
   onLogout: () => void;
 }
 
+
+{/* When this is invoked, the employee page will be replaced by the Manager View. */}
 export default function ManagerView({ employee, onLogout }: Props) {
+
   const [tab, setTab] = useState<"orders" | "inventory">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -134,23 +137,28 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-purple-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-black px-6 py-4 flex items-center justify-between shadow-sm">
+      
+      {/* Header 
+        This controls the top bar that has "Logged in as [ employee ]. */}
+      <header className="bg-[#dd0282] px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <span className="text-3xl">🧋</span>
           <div>
+
+            {/* Employee rank & details section */}
             <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
             <p className="text-xl text-white-500">
               Logged in as <span className="font-semibold">{employee.name}</span>
             </p>
           </div>
         </div>
+
+        {/* LOGOUT button */}
         <button
           onClick={onLogout}
-          className="text-m font-bold text-white-500 hover:text-gray-700 border-3 border-white-300 px-5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Logout
-        </button>
+          className="text-m font-bold text-white-500 hover:text-gray-700 border-3 border-white-300 px-5 py-1.5 rounded-lg bg-[#262525] hover:bg-gray-50 transition-colors"
+        
+        > Logout </button>
       </header>
 
       { /* The below code controls the Stats Bar.
