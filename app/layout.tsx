@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Boba POS",
+  title: "Panda Tea",
   description: "Boba ordering point-of-sale system",
 };
 

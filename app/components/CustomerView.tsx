@@ -13,7 +13,7 @@ export default function CustomerView({ onLogout }: Props) {
         <div className="flex items-center gap-3">
           <span className="text-3xl">🧋</span>
           <div>
-            <h1 className="text-xl font-bold text-amber-900">Boba POS</h1>
+            <h1 className="text-xl font-bold text-amber-900">Panda Tea</h1>
             <p className="text-xs text-gray-500">Customer Order</p>
           </div>
         </div>

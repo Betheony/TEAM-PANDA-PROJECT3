@@ -92,7 +92,7 @@ export default function CashierView({ employee, onLogout }: Props) {
         <div className="flex items-center gap-3">
           <span className="text-3xl">🧋</span>
           <div>
-            <h1 className="text-xl font-bold text-amber-900">Boba POS — Cashier</h1>
+            <h1 className="text-xl font-bold text-amber-900">Panda Tea — Cashier</h1>
             <p className="text-xs text-gray-500">
               Logged in as <span className="font-semibold">{employee.name}</span>
             </p>

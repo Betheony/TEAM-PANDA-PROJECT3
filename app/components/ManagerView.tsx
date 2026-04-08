@@ -138,7 +138,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
         <div className="flex items-center gap-3">
           <span className="text-3xl">🧋</span>
           <div>
-            <h1 className="text-xl font-bold text-amber-900">Boba POS — Manager</h1>
+            <h1 className="text-xl font-bold text-amber-900">Panda Tea — Manager</h1>
             <p className="text-xs text-gray-500">
               Logged in as <span className="font-semibold">{employee.name}</span>
             </p>

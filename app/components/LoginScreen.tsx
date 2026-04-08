@@ -47,7 +47,7 @@ export default function LoginScreen({ onCustomerSelect, onEmployeeLogin }: Props
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <div className="text-7xl mb-4">🧋</div>
-          <h1 className="text-4xl font-bold text-amber-900">Boba POS</h1>
+          <h1 className="text-4xl font-bold text-amber-900">Panda Tea</h1>
           <p className="text-amber-700 mt-2 text-lg">How would you like to proceed?</p>
         </div>
 
@@ -56,7 +56,7 @@ export default function LoginScreen({ onCustomerSelect, onEmployeeLogin }: Props
             onClick={onCustomerSelect}
             className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
           >
-            🛍️ Order as Customer
+            Order as Customer
           </button>
 
           {!showForm ? (
@@ -64,7 +64,7 @@ export default function LoginScreen({ onCustomerSelect, onEmployeeLogin }: Props
               onClick={() => setShowForm(true)}
               className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
             >
-              👤 Employee Login
+              Employee Login
             </button>
           ) : (
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
