@@ -43,63 +43,62 @@ export default function LoginScreen({ onEmployeeLogin }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <div className="text-7xl mb-4">🧋</div>
-          <h1 className="text-4xl font-bold text-amber-900">Panda Tea</h1>
-          <p className="text-amber-700 mt-2 text-lg">How would you like to proceed?</p>
+          <h1 className="text-5xl tracking-tight text-boba-primary mb-2">panda tea</h1>
+          <p className="text-boba-secondary italic">boba tea shop</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <button
             onClick={() => signIn("google")}
-            className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-4 rounded-2xl text-base transition-colors"
           >
-            Order as Customer
+            order as customer
           </button>
 
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
+              className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
             >
-              Employee Login
+              employee login
             </button>
           ) : (
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
-              <h2 className="text-xl font-bold text-gray-800 mb-5">Employee Login</h2>
+            <div className="bg-boba-surface rounded-3xl p-6 border border-boba-border">
+              <h2 className="text-xl text-boba-primary mb-5">employee login</h2>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Name
+                  <label className="block text-sm text-boba-secondary lowercase mb-1">
+                    name
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Bethany"
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800"
+                    placeholder="first name"
+                    className="w-full border border-boba-border rounded-2xl px-4 py-3 focus:outline-none focus:border-boba-accent text-boba-primary bg-transparent placeholder:text-boba-muted"
                     autoFocus
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    PIN
+                  <label className="block text-sm text-boba-secondary lowercase mb-1">
+                    pin
                   </label>
                   <input
                     type="password"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    placeholder="Enter your PIN"
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800"
+                    placeholder="password"
+                    className="w-full border border-boba-border rounded-2xl px-4 py-3 focus:outline-none focus:border-boba-accent text-boba-primary bg-transparent placeholder:text-boba-muted"
                     inputMode="numeric"
                     required
                   />
                 </div>
                 {error && (
-                  <p className="text-red-500 text-sm font-medium">{error}</p>
+                  <p className="text-red-400 text-sm">{error}</p>
                 )}
                 <div className="flex gap-3 pt-1">
                   <button
@@ -110,16 +109,16 @@ export default function LoginScreen({ onEmployeeLogin }: Props) {
                       setName("");
                       setPin("");
                     }}
-                    className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                    className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-3 rounded-full transition-colors"
                   >
-                    Cancel
+                    cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
+                    className="flex-1 bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors disabled:opacity-40"
                   >
-                    {loading ? "Logging in…" : "Login"}
+                    {loading ? "logging in…" : "login"}
                   </button>
                 </div>
               </form>

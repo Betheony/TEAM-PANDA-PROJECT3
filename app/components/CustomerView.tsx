@@ -10,13 +10,19 @@ export default function CustomerView({ onLogout }: Props) {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-screen bg-[#faf7f5] flex flex-col">
+    <div className="min-h-screen bg-boba-bg flex flex-col">
       {/* Header */}
-      <header className="bg-[#fffdfb] border-b border-[#e8e0db] px-8 py-4 flex items-center justify-between">
+      <header className="bg-boba-surface border-b border-boba-border px-8 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl tracking-tight text-[#6b5d5a]">panda tea</h1>
-          <p className="text-sm text-[#9a8d89] italic">welcome back, {session?.user?.name?.split(" ")[0] ?? "guest"}</p>
+          <h1 className="text-2xl tracking-tight text-boba-primary">panda tea</h1>
+          <p className="text-sm text-boba-secondary italic">welcome back, {session?.user?.name?.split(" ")[0] ?? "guest"}</p>
         </div>
+        <button
+          onClick={() => { signOut({ callbackUrl: "/" }); onLogout(); }}
+          className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border hover:border-boba-accent px-4 py-1.5 rounded-full transition-colors"
+        >
+          sign out
+        </button>
       </header>
 
       {/* Main */}
