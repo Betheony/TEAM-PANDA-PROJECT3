@@ -1,45 +1,41 @@
 "use client";
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import LoginScreen from "./components/LoginScreen";
 import CustomerView from "./components/CustomerView";
 import CashierView from "./components/CashierView";
 import ManagerView from "./components/ManagerView";
 
-type View = "login" | "customer" | "cashier" | "manager";
-
-interface Employee {
-  employee_id: number;
-  name: string;
-  role: "cashier" | "manager";
-}
+type View = "login" | "customer" | "cashier";
 
 export default function Home() {
   const { data: session } = useSession();
   const [view, setView] = useState<View>("login");
-  const [employee, setEmployee] = useState<Employee | null>(null);
 
-  const handleLogout = () => {
-    setEmployee(null);
-    setView("login");
-  };
+  const handleLogout = () => setView("login");
 
-  // Google-authenticated customers go straight to CustomerView
-  if (session) return <CustomerView onLogout={handleLogout} />;
-
-  if (view === "login") {
+  // Google-authenticated users go to ManagerView
+  if (session) {
     return (
-      <LoginScreen
-        onEmployeeLogin={(emp) => {
-          setEmployee(emp);
-          setView(emp.role as View);
-        }}
+      <ManagerView
+        employee={{ employee_id: 0, name: session.user?.name ?? "Manager", role: "manager" }}
+        onLogout={() => { signOut({ callbackUrl: "/" }); }}
       />
     );
   }
 
-  if (view === "cashier") return <CashierView employee={employee!} onLogout={handleLogout} />;
-  if (view === "manager") return <ManagerView employee={employee!} onLogout={handleLogout} />;
+  if (view === "customer") return <CustomerView onLogout={handleLogout} />;
+  if (view === "cashier") return (
+    <CashierView
+      employee={{ employee_id: 0, name: "Cashier", role: "cashier" }}
+      onLogout={handleLogout}
+    />
+  );
 
-  return null;
+  return (
+    <LoginScreen
+      onCustomerEntry={() => setView("customer")}
+      onCashierLogin={() => setView("cashier")}
+    />
+  );
 }
