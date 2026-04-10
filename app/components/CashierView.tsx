@@ -145,7 +145,7 @@ export default function CashierView({ employee, onLogout }: Props) {
       {/* Content */}
       <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
         {tab === "order" ? (
-          <OrderingPanel onOrderPlaced={() => { setRefreshKey((k) => k + 1); setTab("queue"); }} />
+          <OrderingPanel showImages={false} onOrderPlaced={() => { setRefreshKey((k) => k + 1); setTab("queue"); }} />
         ) : (
           <div className="h-full overflow-y-auto">
             {activeOrders.length === 0 ? (

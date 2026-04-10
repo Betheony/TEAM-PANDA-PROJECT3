@@ -31,9 +31,10 @@ interface CartItem {
 
 interface Props {
   onOrderPlaced?: (orderId: number) => void;
+  showImages?: boolean;
 }
 
-export default function OrderingPanel({ onOrderPlaced }: Props) {
+export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -175,13 +176,28 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
 
         {/* Menu grid */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+          <div className={`grid gap-2 ${showImages ? "grid-cols-2 lg:grid-cols-3" : "grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"}`}>
             {filtered.map((item) => (
               <button
                 key={item.menu_item_id}
                 onClick={() => openModal(item)}
                 className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95"
               >
+                {showImages && (
+                  item.image_url?.trim() ? (
+                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
+                      🧋
+                    </div>
+                  )
+                )}
                 <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
                   {item.name}
                 </p>
