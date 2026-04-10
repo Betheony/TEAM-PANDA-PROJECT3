@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 
 const CASHIER_PIN = "123456";
@@ -47,6 +47,32 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     setPin("");
     setError("");
   };
+
+  const pinRef = useRef(pin);
+  pinRef.current = pin;
+
+  useEffect(() => {
+    if (!showCashierForm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        const current = pinRef.current;
+        if (current.length >= MAX_PIN_LENGTH) return;
+        const next = current + e.key;
+        setPin(next);
+        setError("");
+        if (next.length === MAX_PIN_LENGTH) {
+          setTimeout(() => submitPin(next), 80);
+        }
+      } else if (e.key === "Backspace") {
+        setPin((p) => p.slice(0, -1));
+        setError("");
+      } else if (e.key === "Enter") {
+        submitPin(pinRef.current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showCashierForm]);
 
   const padKeys = ["1","2","3","4","5","6","7","8","9"];
 

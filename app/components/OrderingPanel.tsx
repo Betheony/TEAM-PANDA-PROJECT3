@@ -1,6 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
-import LoadingOverlay from "./LoadingOverlay";
+import { useState, useEffect, useRef } from "react";
 
 interface MenuItem {
   menu_item_id: number;
@@ -46,41 +45,19 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/menu")
       .then((r) => r.json())
       .then((data) => {
-        const items: MenuItem[] = data.menuItems || [];
-        setMenuItems(items);
+        setMenuItems(data.menuItems || []);
         setToppings(data.toppings || []);
-        const imageCount = items.filter((i) => i.image_url?.trim()).length;
-        if (imageCount === 0) setLoading(false);
       })
-      .catch(() => { setError("Failed to load menu"); setLoading(false); });
+      .catch(() => setError("Failed to load menu"))
+      .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    if (menuItems.length === 0) return;
-    let loaded = 0;
-    const imageItems = menuItems.filter((i) => i.image_url?.trim());
-    if (imageItems.length === 0) return;
-    imageItems.forEach((item) => {
-      const img = new Image();
-      img.onload = img.onerror = () => {
-        loaded += 1;
-        if (loaded >= imageItems.length) setLoading(false);
-      };
-      img.src = item.image_url!;
-    });
-  }, [menuItems]);
-
-  const getImageSrc = (item: MenuItem) => {
-    if (item.image_url && item.image_url.trim() !== "") {
-      return item.image_url;
-    }
-    return null;
-  };
 
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
@@ -121,6 +98,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       ];
     });
     setSelectedItem(null);
+    setSearch("");
   };
 
   const updateQty = (key: string, delta: number) => {
@@ -157,7 +135,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       } else {
         setCart([]);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 4000);
+        setTimeout(() => setSuccess(false), 3000);
         onOrderPlaced?.(data.order_id);
       }
     } catch {
@@ -167,97 +145,109 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
     }
   };
 
-  return (
-    <div className="flex gap-4 h-full min-h-0 relative">
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boba-primary/40 backdrop-blur-sm">
-          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-        </div>
-      )}
+  const filtered = search.trim()
+    ? menuItems.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
+    : menuItems;
 
-      {/* Menu grid */}
-      <div className="flex-1 overflow-y-auto pr-1">
-        {error && (
-          <p className="text-red-400 text-sm mb-3">{error}</p>
-        )}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {menuItems.map((item) => (
-            <button
-              key={item.menu_item_id}
-              onClick={() => openModal(item)}
-              className="w-full bg-boba-surface rounded-3xl p-4 hover:shadow-md transition-all text-left border border-boba-border hover:border-boba-accent hover:-translate-y-0.5"
-            >
-              {getImageSrc(item) ? (
-                <div className="w-full h-52 rounded-2xl mb-3 bg-boba-subtle flex items-center justify-center overflow-hidden">
-                  <img
-                    src={getImageSrc(item)!}
-                    alt={item.name}
-                    className="w-full h-auto max-h-full object-contain scale-190"
-                  />
-                </div>
-              ) : (
-                <div className="h-52 flex items-center justify-center text-4xl mb-3 bg-boba-subtle rounded-2xl">🧋</div>
-              )}
-              <h3 className="text-boba-primary text-sm leading-tight line-clamp-3">
-                {item.name}
-              </h3>
-              <p className="text-boba-accent mt-2">
-                ${Number(item.price).toFixed(2)}
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="w-8 h-8 border-4 border-boba-border border-t-boba-accent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-4 h-full min-h-0">
+      {/* Menu */}
+      <div className="flex-1 flex flex-col min-h-0 gap-3">
+        {/* Search bar */}
+        <input
+          ref={searchRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="search menu..."
+          className="w-full border border-boba-border rounded-xl px-4 py-2 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:border-boba-accent placeholder:text-boba-muted shrink-0"
+        />
+
+        {error && <p className="text-red-400 text-sm shrink-0">{error}</p>}
+
+        {/* Menu grid */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+            {filtered.map((item) => (
+              <button
+                key={item.menu_item_id}
+                onClick={() => openModal(item)}
+                className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95"
+              >
+                <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
+                  {item.name}
+                </p>
+                <p className="text-boba-accent text-sm font-semibold">
+                  ${Number(item.price).toFixed(2)}
+                </p>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="col-span-full text-center text-boba-muted text-sm py-8">
+                no items match "{search}"
               </p>
-            </button>
-          ))}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Cart */}
-      <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-3xl p-5 border border-boba-border self-start max-h-[70vh] min-h-0">
-        <h2 className="text-xl text-boba-primary mb-4">your order</h2>
+      <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border min-h-0">
+        <h2 className="text-lg text-boba-primary mb-3 shrink-0">order</h2>
 
         {success && (
-          <div className="bg-boba-subtle border border-boba-accent text-boba-primary rounded-2xl p-3 mb-3 text-sm">
-            Order placed successfully!
+          <div className="bg-boba-subtle border border-boba-accent text-boba-primary rounded-xl p-2 mb-3 text-sm shrink-0">
+            Order placed!
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {cart.length === 0 ? (
-            <p className="text-boba-muted text-sm text-center m-6 italic">
-              empty for now — tap a drink to add it
-            </p>
+            <p className="text-boba-muted text-sm text-center mt-8 italic">cart is empty</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {cart.map((item) => (
-                <div key={item.key} className="border-b border-boba-border pb-3">
-                  <div className="flex justify-between items-start gap-2">
+                <div key={item.key} className="border-b border-boba-border pb-2">
+                  <div className="flex justify-between items-start gap-1">
                     <div className="flex-1 min-w-0">
-                      <p className="text-boba-primary text-sm truncate">
-                        {item.name}
-                      </p>
+                      <p className="text-boba-primary text-sm font-medium truncate">{item.name}</p>
                       {item.toppings.length > 0 && (
                         <p className="text-xs text-boba-muted truncate">
                           {item.toppings.map((t) => t.name).join(", ")}
                         </p>
                       )}
                     </div>
-                    <p className="text-boba-accent text-sm shrink-0">
+                    <p className="text-boba-accent text-sm shrink-0 ml-1">
                       ${(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-1.5">
                     <button
                       onClick={() => updateQty(item.key, -1)}
                       className="w-6 h-6 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-sm flex items-center justify-center transition-colors"
                     >
                       −
                     </button>
-                    <span className="text-sm text-boba-primary w-5 text-center">
-                      {item.quantity}
-                    </span>
+                    <span className="text-sm text-boba-primary w-5 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateQty(item.key, 1)}
                       className="w-6 h-6 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-sm flex items-center justify-center transition-colors"
                     >
                       +
+                    </button>
+                    <button
+                      onClick={() => setCart((prev) => prev.filter((c) => c.key !== item.key))}
+                      className="ml-auto text-boba-muted hover:text-red-400 text-xs transition-colors"
+                    >
+                      ✕
                     </button>
                   </div>
                 </div>
@@ -266,7 +256,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
           )}
         </div>
 
-        <div className="pt-3 border-t border-boba-border space-y-3">
+        <div className="pt-3 border-t border-boba-border space-y-2 shrink-0">
           <div className="flex items-baseline justify-between px-1">
             <span className="text-boba-secondary text-sm">total</span>
             <span className="text-2xl text-boba-primary">${total.toFixed(2)}</span>
@@ -283,7 +273,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
                     : "border border-boba-border text-boba-muted hover:border-boba-accent"
                 }`}
               >
-                {m === "card" ? "card" : "cash"}
+                {m}
               </button>
             ))}
           </div>
@@ -293,86 +283,88 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || placing}
-            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
           >
-            {placing ? "placing…" : "place order"}
+            {placing ? "placing…" : `place order · $${total.toFixed(2)}`}
           </button>
+
+          {cart.length > 0 && (
+            <button
+              onClick={() => setCart([])}
+              className="w-full text-boba-muted hover:text-red-400 text-xs py-1 transition-colors"
+            >
+              clear cart
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Topping modal */}
+      {/* Topping + qty modal */}
       {selectedItem && (
         <div
           className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
         >
-          <div className="bg-boba-surface rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-boba-border">
-            <h3 className="text-2xl text-boba-primary mb-1">
-              {selectedItem.name}
-            </h3>
-            <p className="text-boba-accent mb-6">
-              ${Number(selectedItem.price).toFixed(2)}
-            </p>
+          <div className="bg-boba-surface rounded-2xl p-6 w-full max-w-xs shadow-2xl border border-boba-border">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg text-boba-primary font-medium">{selectedItem.name}</h3>
+                <p className="text-boba-accent text-sm">${Number(selectedItem.price).toFixed(2)}</p>
+              </div>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="text-boba-muted hover:text-boba-primary text-lg leading-none ml-2"
+              >
+                ✕
+              </button>
+            </div>
 
             {toppings.length > 0 && (
-              <div className="mb-6">
-                <p className="text-boba-secondary text-sm lowercase mb-3">
-                  add something extra
-                </p>
-                <div className="space-y-2">
+              <div className="mb-4">
+                <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">toppings</p>
+                <div className="grid grid-cols-2 gap-1.5">
                   {toppings.map((t) => (
-                    <label
+                    <button
                       key={t.topping_id}
-                      className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => toggleTopping(t.topping_id)}
+                      className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                        selectedToppings.includes(t.topping_id)
+                          ? "bg-boba-accent text-white"
+                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedToppings.includes(t.topping_id)}
-                        onChange={() => toggleTopping(t.topping_id)}
-                        className="w-4 h-4 accent-boba-accent"
-                      />
-                      <span className="text-boba-primary group-hover:text-boba-primary/80">
-                        {t.name}
-                      </span>
-                    </label>
+                      {t.name}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="mb-6">
-              <p className="text-boba-secondary text-sm lowercase mb-3">quantity</p>
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide">qty</p>
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setItemQty(Math.max(1, itemQty - 1))}
-                  className="w-9 h-9 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
+                  className="w-8 h-8 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
                 >
                   −
                 </button>
-                <span className="text-xl text-boba-primary w-8 text-center">{itemQty}</span>
+                <span className="text-xl text-boba-primary w-6 text-center">{itemQty}</span>
                 <button
                   onClick={() => setItemQty(itemQty + 1)}
-                  className="w-9 h-9 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
+                  className="w-8 h-8 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-3 rounded-full transition-colors"
-              >
-                cancel
-              </button>
-              <button
-                onClick={addToCart}
-                className="flex-1 bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors"
-              >
-                add to order
-              </button>
-            </div>
+            <button
+              onClick={addToCart}
+              className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors font-medium"
+            >
+              add to order
+            </button>
           </div>
         </div>
       )}

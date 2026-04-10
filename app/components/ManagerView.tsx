@@ -64,18 +64,22 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/orders");
-      setOrders(await res.json());
-    } catch {
-      // silent
+      if (!res.ok) throw new Error(`orders fetch failed: ${res.status}`);
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
     }
   }, []);
 
   const fetchIngredients = useCallback(async () => {
     try {
       const res = await fetch("/api/ingredients");
-      setIngredients(await res.json());
-    } catch {
-      // silent
+      if (!res.ok) throw new Error(`ingredients fetch failed: ${res.status}`);
+      const data = await res.json();
+      setIngredients(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
     }
   }, []);
 
