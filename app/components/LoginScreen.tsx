@@ -3,6 +3,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 
 const CASHIER_PIN = "123456";
+const MAX_PIN_LENGTH = 6;
 
 interface Props {
   onCustomerEntry: () => void;
@@ -13,15 +14,41 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const [showCashierForm, setShowCashierForm] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [shake, setShake] = useState(false);
 
-  const handleCashierLogin = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (pin === CASHIER_PIN) {
-      onCashierLogin();
-    } else {
-      setError("incorrect pin");
+  const handleDigit = (digit: string) => {
+    if (pin.length >= MAX_PIN_LENGTH) return;
+    const next = pin + digit;
+    setPin(next);
+    setError("");
+    if (next.length === MAX_PIN_LENGTH) {
+      setTimeout(() => submitPin(next), 80);
     }
   };
+
+  const handleBackspace = () => {
+    setPin((p) => p.slice(0, -1));
+    setError("");
+  };
+
+  const submitPin = (value: string) => {
+    if (value === CASHIER_PIN) {
+      onCashierLogin();
+    } else {
+      setShake(true);
+      setError("incorrect pin");
+      setPin("");
+      setTimeout(() => setShake(false), 500);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowCashierForm(false);
+    setPin("");
+    setError("");
+  };
+
+  const padKeys = ["1","2","3","4","5","6","7","8","9"];
 
   return (
     <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4">
@@ -50,40 +77,70 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
             </button>
           ) : (
             <div className="bg-boba-surface rounded-3xl p-6 border border-boba-border">
-              <h2 className="text-xl text-boba-primary mb-5">cashier login</h2>
-              <form onSubmit={handleCashierLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-boba-secondary lowercase mb-1">
-                    pin
-                  </label>
-                  <input
-                    type="password"
-                    value={pin}
-                    onChange={(e) => { setPin(e.target.value); setError(""); }}
-                    placeholder="enter pin"
-                    className="w-full border border-boba-border rounded-2xl px-4 py-3 focus:outline-none focus:border-boba-accent text-boba-primary bg-transparent placeholder:text-boba-muted"
-                    inputMode="numeric"
-                    autoFocus
-                    required
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl text-boba-primary">cashier login</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-boba-muted hover:text-boba-primary text-sm transition-colors"
+                >
+                  cancel
+                </button>
+              </div>
+
+              {/* PIN dots display */}
+              <div
+                className="flex justify-center gap-3 mb-2"
+                style={shake ? { animation: "wiggle 0.4s ease-in-out" } : {}}
+              >
+                {Array.from({ length: MAX_PIN_LENGTH }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-100 ${
+                      i < pin.length
+                        ? "bg-boba-accent border-boba-accent scale-110"
+                        : "bg-transparent border-boba-border"
+                    }`}
                   />
-                </div>
-                {error && <p className="text-red-400 text-sm">{error}</p>}
-                <div className="flex gap-3 pt-1">
+                ))}
+              </div>
+              {error ? (
+                <p className="text-red-400 text-sm text-center mb-4">{error}</p>
+              ) : (
+                <div className="mb-4 h-5" />
+              )}
+
+              {/* Number pad */}
+              <div className="grid grid-cols-3 gap-2">
+                {padKeys.map((key) => (
                   <button
-                    type="button"
-                    onClick={() => { setShowCashierForm(false); setPin(""); setError(""); }}
-                    className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-3 rounded-full transition-colors"
+                    key={key}
+                    onClick={() => handleDigit(key)}
+                    className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
                   >
-                    cancel
+                    {key}
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors"
-                  >
-                    login
-                  </button>
-                </div>
-              </form>
+                ))}
+                {/* Bottom row: backspace, 0, enter */}
+                <button
+                  onClick={handleBackspace}
+                  className="bg-boba-bg hover:bg-boba-border text-boba-secondary text-xl py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                >
+                  &#9003;
+                </button>
+                <button
+                  onClick={() => handleDigit("0")}
+                  className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                >
+                  0
+                </button>
+                <button
+                  onClick={() => submitPin(pin)}
+                  disabled={pin.length === 0}
+                  className="bg-boba-accent hover:bg-boba-accent-hover disabled:opacity-30 text-white text-xl py-4 rounded-2xl transition-colors active:scale-95"
+                >
+                  &#10003;
+                </button>
+              </div>
             </div>
           )}
 
