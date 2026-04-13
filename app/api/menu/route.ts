@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
 export async function GET() {
@@ -11,5 +11,41 @@ export async function GET() {
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const { name, price, image_url, recipe } = await req.json();
+  if (!name?.trim() || price === undefined) {
+    return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const itemResult = await client.query(
+      `INSERT INTO menu_item (name, price, image_url)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [name.trim(), Number(price), image_url?.trim() || null]
+    );
+    const newItem = itemResult.rows[0];
+    // recipe is an array of { ingredient_id, qty_needed }
+    for (const row of (recipe || [])) {
+      if (row.qty_needed > 0) {
+        await client.query(
+          `INSERT INTO recipe (menu_item_id, ingredient_id, qty_needed)
+           VALUES ($1, $2, $3)`,
+          [newItem.menu_item_id, row.ingredient_id, row.qty_needed]
+        );
+      }
+    }
+    await client.query('COMMIT');
+    return NextResponse.json(newItem, { status: 201 });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
