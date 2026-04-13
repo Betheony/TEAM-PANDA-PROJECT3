@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import ImageEffect from './MagnifierTool';
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 
@@ -457,6 +458,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
             </div>
           </div>
         )}
+
+        <h1 className='text-5xl mb-10 font-bold'>IMAGE MAGNIFIER</h1>
+        <ImageEffect />
       </main>
     </div>
   );
