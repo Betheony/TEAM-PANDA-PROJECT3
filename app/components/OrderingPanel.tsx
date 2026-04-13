@@ -216,7 +216,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       </div>
 
       {/* Cart */}
-      <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border min-h-0">
+      <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border self-start sticky top-0 max-h-[calc(100vh-140px)]">
         <h2 className="text-lg text-boba-primary mb-3 shrink-0">order</h2>
 
         {success && (
