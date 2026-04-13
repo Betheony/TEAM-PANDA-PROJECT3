@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Boba design palette */
+  --boba-bg: #faf7f5;
+  --boba-surface: #fffdfb;
+  --boba-subtle: #f5f0ec;
+  --boba-border: #e8e0db;
+  --boba-primary: #6b5d5a;
+  --boba-secondary: #9a8d89;
+  --boba-muted: #b8aba6;
+  --boba-accent: #c9a69c;
+  --boba-accent-hover: #b89689;
 }
 
 @theme inline {
@@ -10,12 +21,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Boba tokens available as Tailwind utilities */
+  --color-boba-bg: var(--boba-bg);
+  --color-boba-surface: var(--boba-surface);
+  --color-boba-subtle: var(--boba-subtle);
+  --color-boba-border: var(--boba-border);
+  --color-boba-primary: var(--boba-primary);
+  --color-boba-secondary: var(--boba-secondary);
+  --color-boba-muted: var(--boba-muted);
+  --color-boba-accent: var(--boba-accent);
+  --color-boba-accent-hover: var(--boba-accent-hover);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    /* --foreground: #ededed; */
     --foreground: #000000;
   }
 }
@@ -24,4 +45,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }

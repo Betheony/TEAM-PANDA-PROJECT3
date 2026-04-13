@@ -1,130 +1,182 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 
-interface Employee {
-  employee_id: number;
-  name: string;
-  role: "cashier" | "manager";
-}
+const CASHIER_PIN = "123456";
+const MAX_PIN_LENGTH = 6;
 
 interface Props {
-  onEmployeeLogin: (employee: Employee) => void;
+  onCustomerEntry: () => void;
+  onCashierLogin: () => void;
 }
 
-export default function LoginScreen({ onEmployeeLogin }: Props) {
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
+export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
+  const [showCashierForm, setShowCashierForm] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [shake, setShake] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleDigit = (digit: string) => {
+    if (pin.length >= MAX_PIN_LENGTH) return;
+    const next = pin + digit;
+    setPin(next);
     setError("");
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, pin }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-      } else {
-        onEmployeeLogin(data);
-      }
-    } catch {
-      setError("Connection error. Check your database connection.");
-    } finally {
-      setLoading(false);
+    if (next.length === MAX_PIN_LENGTH) {
+      setTimeout(() => submitPin(next), 80);
     }
   };
 
+  const handleBackspace = () => {
+    setPin((p) => p.slice(0, -1));
+    setError("");
+  };
+
+  const submitPin = (value: string) => {
+    if (value === CASHIER_PIN) {
+      onCashierLogin();
+    } else {
+      setShake(true);
+      setError("incorrect pin");
+      setPin("");
+      setTimeout(() => setShake(false), 500);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowCashierForm(false);
+    setPin("");
+    setError("");
+  };
+
+  const pinRef = useRef(pin);
+  pinRef.current = pin;
+
+  useEffect(() => {
+    if (!showCashierForm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        const current = pinRef.current;
+        if (current.length >= MAX_PIN_LENGTH) return;
+        const next = current + e.key;
+        setPin(next);
+        setError("");
+        if (next.length === MAX_PIN_LENGTH) {
+          setTimeout(() => submitPin(next), 80);
+        }
+      } else if (e.key === "Backspace") {
+        setPin((p) => p.slice(0, -1));
+        setError("");
+      } else if (e.key === "Enter") {
+        submitPin(pinRef.current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showCashierForm]);
+
+  const padKeys = ["1","2","3","4","5","6","7","8","9"];
+
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <div className="text-7xl mb-4">🧋</div>
-          <h1 className="text-4xl font-bold text-amber-900">Panda Tea</h1>
-          <p className="text-amber-700 mt-2 text-lg">How would you like to proceed?</p>
+          <h1 className="text-5xl tracking-tight text-boba-primary mb-2">panda tea</h1>
+          <p className="text-boba-secondary italic">boba tea shop</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {/* Customer */}
           <button
-            onClick={() => signIn("google")}
-            className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
+            onClick={onCustomerEntry}
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-4 rounded-2xl text-base transition-colors"
           >
-            Order as Customer
+            customer ordering
           </button>
 
-          {!showForm ? (
+          {/* Cashier */}
+          {!showCashierForm ? (
             <button
-              onClick={() => setShowForm(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-5 px-6 rounded-2xl text-xl transition-colors shadow-lg"
+              onClick={() => setShowCashierForm(true)}
+              className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
             >
-              Employee Login
+              cashier login
             </button>
           ) : (
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
-              <h2 className="text-xl font-bold text-gray-800 mb-5">Employee Login</h2>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Bethany"
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800"
-                    autoFocus
-                    required
+            <div className="bg-boba-surface rounded-3xl p-6 border border-boba-border">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl text-boba-primary">cashier login</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-boba-muted hover:text-boba-primary text-sm transition-colors"
+                >
+                  cancel
+                </button>
+              </div>
+
+              {/* PIN dots display */}
+              <div
+                className="flex justify-center gap-3 mb-2"
+                style={shake ? { animation: "wiggle 0.4s ease-in-out" } : {}}
+              >
+                {Array.from({ length: MAX_PIN_LENGTH }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-100 ${
+                      i < pin.length
+                        ? "bg-boba-accent border-boba-accent scale-110"
+                        : "bg-transparent border-boba-border"
+                    }`}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    PIN
-                  </label>
-                  <input
-                    type="password"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    placeholder="Enter your PIN"
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800"
-                    inputMode="numeric"
-                    required
-                  />
-                </div>
-                {error && (
-                  <p className="text-red-500 text-sm font-medium">{error}</p>
-                )}
-                <div className="flex gap-3 pt-1">
+                ))}
+              </div>
+              {error ? (
+                <p className="text-red-400 text-sm text-center mb-4">{error}</p>
+              ) : (
+                <div className="mb-4 h-5" />
+              )}
+
+              {/* Number pad */}
+              <div className="grid grid-cols-3 gap-2">
+                {padKeys.map((key) => (
                   <button
-                    type="button"
-                    onClick={() => {
-                      setShowForm(false);
-                      setError("");
-                      setName("");
-                      setPin("");
-                    }}
-                    className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+                    key={key}
+                    onClick={() => handleDigit(key)}
+                    className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
                   >
-                    Cancel
+                    {key}
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
-                  >
-                    {loading ? "Logging in…" : "Login"}
-                  </button>
-                </div>
-              </form>
+                ))}
+                {/* Bottom row: backspace, 0, enter */}
+                <button
+                  onClick={handleBackspace}
+                  className="bg-boba-bg hover:bg-boba-border text-boba-secondary text-xl py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                >
+                  &#9003;
+                </button>
+                <button
+                  onClick={() => handleDigit("0")}
+                  className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                >
+                  0
+                </button>
+                <button
+                  onClick={() => submitPin(pin)}
+                  disabled={pin.length === 0}
+                  className="bg-boba-accent hover:bg-boba-accent-hover disabled:opacity-30 text-white text-xl py-4 rounded-2xl transition-colors active:scale-95"
+                >
+                  &#10003;
+                </button>
+              </div>
             </div>
           )}
+
+          {/* Manager */}
+          <button
+            onClick={() => signIn("google")}
+            className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
+          >
+            manager login
+          </button>
         </div>
       </div>
     </div>

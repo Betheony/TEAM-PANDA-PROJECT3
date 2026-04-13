@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface MenuItem {
   menu_item_id: number;
@@ -31,9 +31,10 @@ interface CartItem {
 
 interface Props {
   onOrderPlaced?: (orderId: number) => void;
+  showImages?: boolean;
 }
 
-export default function OrderingPanel({ onOrderPlaced }: Props) {
+export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -45,40 +46,19 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     fetch("/api/menu")
       .then((r) => r.json())
       .then((data) => {
-        const items: MenuItem[] = data.menuItems || [];
-        setMenuItems(items);
+        setMenuItems(data.menuItems || []);
         setToppings(data.toppings || []);
-        const imageCount = items.filter((i) => i.image_url?.trim()).length;
-        if (imageCount === 0) setLoading(false);
       })
-      .catch(() => { setError("Failed to load menu"); setLoading(false); });
+      .catch(() => setError("Failed to load menu"))
+      .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    if (menuItems.length === 0) return;
-    let loaded = 0;
-    const imageItems = menuItems.filter((i) => i.image_url?.trim());
-    if (imageItems.length === 0) return;
-    imageItems.forEach((item) => {
-        const img = new Image();
-        img.onload = img.onerror = () => {
-          loaded += 1;
-          if (loaded >= imageItems.length) setLoading(false);
-        };
-        img.src = item.image_url!;
-      });
-  }, [menuItems]);
-
-  const getImageSrc = (item: MenuItem) => {
-    if (item.image_url && item.image_url.trim() !== "") {
-      return item.image_url;
-    }
-    return null;
-  };
 
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
@@ -119,6 +99,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       ];
     });
     setSelectedItem(null);
+    setSearch("");
   };
 
   const updateQty = (key: string, delta: number) => {
@@ -155,7 +136,7 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
       } else {
         setCart([]);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 4000);
+        setTimeout(() => setSuccess(false), 3000);
         onOrderPlaced?.(data.order_id);
       }
     } catch {
@@ -165,96 +146,124 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
     }
   };
 
+  const filtered = search.trim()
+    ? menuItems.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
+    : menuItems;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="w-8 h-8 border-4 border-boba-border border-t-boba-accent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex gap-4 h-full min-h-0 relative">
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-        </div>
-      )}
-      {/* Menu grid */}
-      <div className="flex-1 overflow-y-auto pr-1">
-        {error && (
-          <p className="text-red-500 text-sm mb-3">{error}</p>
-        )}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {menuItems.map((item) => (
-            <button
-              key={item.menu_item_id}
-              onClick={() => openModal(item)}
-              className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left border border-orange-100 hover:border-pink-300 hover:-translate-y-0.5"
-            >
-              {getImageSrc(item) ? (
-                <div className="w-full h-52 rounded-lg mb-3 bg-orange-50 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={getImageSrc(item)!}
-                    alt={item.name}
-                    className="w-full h-auto max-h-full object-contain scale-190"
-                  />
-                </div>
-              ) : (
-                <div className="h-52 flex items-center justify-center text-4xl mb-3 bg-orange-50 rounded-lg">🧋</div>
-              )}
-              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-3">
-                {item.name}
-              </h3>
-              <p className="text-pink-600 font-bold mt-2">
-                ${Number(item.price).toFixed(2)}
+    <div className="flex gap-4 h-full min-h-0">
+      {/* Menu */}
+      <div className="flex-1 flex flex-col min-h-0 gap-3">
+        {/* Search bar */}
+        <input
+          ref={searchRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="search menu..."
+          className="w-full border border-boba-border rounded-xl px-4 py-2 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:border-boba-accent placeholder:text-boba-muted shrink-0"
+        />
+
+        {error && <p className="text-red-400 text-sm shrink-0">{error}</p>}
+
+        {/* Menu grid */}
+        <div className="flex-1 overflow-y-auto">
+          <div className={`grid gap-2 ${showImages ? "grid-cols-2 lg:grid-cols-3" : "grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"}`}>
+            {filtered.map((item) => (
+              <button
+                key={item.menu_item_id}
+                onClick={() => openModal(item)}
+                className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95"
+              >
+                {showImages && (
+                  item.image_url?.trim() ? (
+                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
+                      🧋
+                    </div>
+                  )
+                )}
+                <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
+                  {item.name}
+                </p>
+                <p className="text-boba-accent text-sm font-semibold">
+                  ${Number(item.price).toFixed(2)}
+                </p>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="col-span-full text-center text-boba-muted text-sm py-8">
+                no items match "{search}"
               </p>
-            </button>
-          ))}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Cart */}
-      <div className="w-72 shrink-0 flex flex-col bg-white rounded-2xl shadow p-4 border border-orange-100 min-h-0">
-        <h2 className="text-lg font-bold text-amber-900 mb-3">Cart</h2>
+      <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border min-h-0">
+        <h2 className="text-lg text-boba-primary mb-3 shrink-0">order</h2>
 
         {success && (
-          <div className="bg-green-50 border border-green-300 text-green-700 rounded-xl p-3 mb-3 text-sm font-medium">
-            ✅ Order placed successfully!
+          <div className="bg-boba-subtle border border-boba-accent text-boba-primary rounded-xl p-2 mb-3 text-sm shrink-0">
+            Order placed!
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {cart.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center mt-10">
-              Cart is empty — tap a drink to add it!
-            </p>
+            <p className="text-boba-muted text-sm text-center mt-8 italic">cart is empty</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {cart.map((item) => (
-                <div key={item.key} className="border-b border-gray-100 pb-3">
-                  <div className="flex justify-between items-start gap-2">
+                <div key={item.key} className="border-b border-boba-border pb-2">
+                  <div className="flex justify-between items-start gap-1">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm truncate">
-                        {item.name}
-                      </p>
+                      <p className="text-boba-primary text-sm font-medium truncate">{item.name}</p>
                       {item.toppings.length > 0 && (
-                        <p className="text-xs text-gray-400 truncate">
+                        <p className="text-xs text-boba-muted truncate">
                           {item.toppings.map((t) => t.name).join(", ")}
                         </p>
                       )}
                     </div>
-                    <p className="text-pink-600 font-bold text-sm shrink-0">
+                    <p className="text-boba-accent text-sm shrink-0 ml-1">
                       ${(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-1.5">
                     <button
                       onClick={() => updateQty(item.key, -1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-red-100 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors"
+                      className="w-6 h-6 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-sm flex items-center justify-center transition-colors"
                     >
                       −
                     </button>
-                    <span className="text-sm font-semibold w-5 text-center">
-                      {item.quantity}
-                    </span>
+                    <span className="text-sm text-boba-primary w-5 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateQty(item.key, 1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-green-100 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors"
+                      className="w-6 h-6 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-sm flex items-center justify-center transition-colors"
                     >
                       +
+                    </button>
+                    <button
+                      onClick={() => setCart((prev) => prev.filter((c) => c.key !== item.key))}
+                      className="ml-auto text-boba-muted hover:text-red-400 text-xs transition-colors"
+                    >
+                      ✕
                     </button>
                   </div>
                 </div>
@@ -263,10 +272,10 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
           )}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-          <div className="flex justify-between font-bold text-gray-800">
-            <span>Total</span>
-            <span className="text-pink-600 text-lg">${total.toFixed(2)}</span>
+        <div className="pt-3 border-t border-boba-border space-y-2 shrink-0">
+          <div className="flex items-baseline justify-between px-1">
+            <span className="text-boba-secondary text-sm">total</span>
+            <span className="text-2xl text-boba-primary">${total.toFixed(2)}</span>
           </div>
 
           <div className="flex gap-2">
@@ -274,102 +283,104 @@ export default function OrderingPanel({ onOrderPlaced }: Props) {
               <button
                 key={m}
                 onClick={() => setPaymentMethod(m)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${
+                className={`flex-1 py-2 rounded-full text-sm transition-colors ${
                   paymentMethod === m
-                    ? "bg-purple-600 text-white"
-                    : "border border-gray-300 text-gray-600 hover:bg-gray-50"
+                    ? "bg-boba-accent text-white"
+                    : "border border-boba-border text-boba-muted hover:border-boba-accent"
                 }`}
               >
-                {m === "card" ? "💳 Card" : "💵 Cash"}
+                {m}
               </button>
             ))}
           </div>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-400 text-xs">{error}</p>}
 
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || placing}
-            className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-40 text-base"
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
           >
-            {placing ? "Placing…" : "Place Order"}
+            {placing ? "placing…" : `place order · $${total.toFixed(2)}`}
           </button>
+
+          {cart.length > 0 && (
+            <button
+              onClick={() => setCart([])}
+              className="w-full text-boba-muted hover:text-red-400 text-xs py-1 transition-colors"
+            >
+              clear cart
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Topping modal */}
+      {/* Topping + qty modal */}
       {selectedItem && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-800 mb-1">
-              {selectedItem.name}
-            </h3>
-            <p className="text-pink-600 font-bold text-xl mb-5">
-              ${Number(selectedItem.price).toFixed(2)}
-            </p>
+          <div className="bg-boba-surface rounded-2xl p-6 w-full max-w-xs shadow-2xl border border-boba-border">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg text-boba-primary font-medium">{selectedItem.name}</h3>
+                <p className="text-boba-accent text-sm">${Number(selectedItem.price).toFixed(2)}</p>
+              </div>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="text-boba-muted hover:text-boba-primary text-lg leading-none ml-2"
+              >
+                ✕
+              </button>
+            </div>
 
             {toppings.length > 0 && (
-              <div className="mb-5">
-                <p className="font-semibold text-gray-700 mb-3">
-                  Add Toppings (optional)
-                </p>
-                <div className="space-y-2">
+              <div className="mb-4">
+                <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">toppings</p>
+                <div className="grid grid-cols-2 gap-1.5">
                   {toppings.map((t) => (
-                    <label
+                    <button
                       key={t.topping_id}
-                      className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => toggleTopping(t.topping_id)}
+                      className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                        selectedToppings.includes(t.topping_id)
+                          ? "bg-boba-accent text-white"
+                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedToppings.includes(t.topping_id)}
-                        onChange={() => toggleTopping(t.topping_id)}
-                        className="w-4 h-4 accent-pink-500"
-                      />
-                      <span className="text-gray-700 group-hover:text-gray-900">
-                        {t.name}
-                      </span>
-                    </label>
+                      {t.name}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="mb-5">
-              <p className="font-semibold text-gray-700 mb-3">Quantity</p>
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide">qty</p>
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setItemQty(Math.max(1, itemQty - 1))}
-                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-lg"
+                  className="w-8 h-8 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
                 >
                   −
                 </button>
-                <span className="font-bold text-xl w-8 text-center">{itemQty}</span>
+                <span className="text-xl text-boba-primary w-6 text-center">{itemQty}</span>
                 <button
                   onClick={() => setItemQty(itemQty + 1)}
-                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-lg"
+                  className="w-8 h-8 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-lg transition-colors"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={addToCart}
-                className="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl font-bold"
-              >
-                Add to Cart
-              </button>
-            </div>
+            <button
+              onClick={addToCart}
+              className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors font-medium"
+            >
+              add to order
+            </button>
           </div>
         </div>
       )}
