@@ -21,3 +21,23 @@ export async function PATCH(
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const result = await pool.query(
+      `DELETE FROM ingredient WHERE ingredient_id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Ingredient not found' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

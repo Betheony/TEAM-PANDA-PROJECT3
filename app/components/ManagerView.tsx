@@ -60,6 +60,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [saving, setSaving] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [addForm, setAddForm] = useState({ name: "", qty_in_stock: "", target_qty: "" });
+  const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -134,6 +137,44 @@ export default function ManagerView({ employee, onLogout }: Props) {
       setError(`Failed to update ingredient ${ingredientId}`);
     } finally {
       setSaving(null);
+    }
+  };
+
+  const addIngredient = async () => {
+    if (!addForm.name.trim()) return;
+    setAdding(true);
+    setError("");
+    try {
+      const res = await fetch("/api/ingredients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: addForm.name,
+          qty_in_stock: Number(addForm.qty_in_stock) || 0,
+          target_qty: Number(addForm.target_qty) || 0,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add ingredient");
+      setAddForm({ name: "", qty_in_stock: "", target_qty: "" });
+      fetchIngredients();
+    } catch {
+      setError("Failed to add ingredient");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const deleteIngredient = async (ingredientId: number) => {
+    setDeletingId(ingredientId);
+    setError("");
+    try {
+      const res = await fetch(`/api/ingredients/${ingredientId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete ingredient");
+      fetchIngredients();
+    } catch {
+      setError("Failed to delete ingredient");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -344,6 +385,50 @@ export default function ManagerView({ employee, onLogout }: Props) {
             {error && (
               <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>
             )}
+
+            {/* Add ingredient form */}
+            <div className="bg-white rounded-2xl shadow border border-orange-100 p-4 mb-4 flex flex-wrap gap-3 items-end">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500 font-medium">Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Tapioca Pearls"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
+                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-48"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500 font-medium">Initial Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={addForm.qty_in_stock}
+                  onChange={(e) => setAddForm((p) => ({ ...p, qty_in_stock: e.target.value }))}
+                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-28"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500 font-medium">Target Qty</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={addForm.target_qty}
+                  onChange={(e) => setAddForm((p) => ({ ...p, target_qty: e.target.value }))}
+                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-28"
+                />
+              </div>
+              <button
+                onClick={addIngredient}
+                disabled={adding || !addForm.name.trim()}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+              >
+                {adding ? "Adding…" : "+ Add Ingredient"}
+              </button>
+            </div>
+
             <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-amber-50 border-b border-orange-100">
@@ -353,6 +438,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Target</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Stock Level</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Update Stock</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -416,8 +502,6 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         {/* This section controls the tools that update the inventory stocks. */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-
-                            {/* Text input to update the inventory stock. */}
                             <input
                               type="number"
                               min="0"
@@ -434,8 +518,6 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               }
                               className="w-20 border border-black border-2 rounded-lg px-2 py-1 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500"
                             />
-
-                            {/* This button updates the stock count after being clicked. */}
                             <button
                               onClick={() => saveStock(ing.ingredient_id)}
                               disabled={
@@ -448,6 +530,15 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               {saving === ing.ingredient_id ? "…" : "Save"}
                             </button>
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => deleteIngredient(ing.ingredient_id)}
+                            disabled={deletingId === ing.ingredient_id}
+                            className="border border-red-300 text-red-500 hover:bg-red-50 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                          >
+                            {deletingId === ing.ingredient_id ? "…" : "Delete"}
+                          </button>
                         </td>
                       </tr>
                     );
