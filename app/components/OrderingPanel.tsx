@@ -50,6 +50,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Load both menu items and available toppings up front so the panel can stay client-driven after mount.
     fetch("/api/menu")
       .then((r) => r.json())
       .then((data) => {
@@ -61,6 +62,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   }, []);
 
   const openModal = (item: MenuItem) => {
+    // Reset customizations so each menu selection starts from a clean default state.
     setSelectedItem(item);
     setSelectedToppings([]);
     setItemQty(1);
@@ -78,6 +80,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       .filter((t) => selectedToppings.includes(t.topping_id))
       .map((t) => ({ topping_id: t.topping_id, name: t.name, topping_qty: t.qty_needed }));
 
+    // The cart key groups the same drink+topping combination into a single editable line item.
     const key = `${selectedItem.menu_item_id}-${[...selectedToppings].sort().join(",")}`;
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
@@ -103,6 +106,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   };
 
   const updateQty = (key: string, delta: number) => {
+    // Dropping to zero removes the item entirely instead of leaving an empty cart row behind.
     setCart((prev) =>
       prev
         .map((c) => (c.key === key ? { ...c, quantity: c.quantity + delta } : c))
@@ -117,6 +121,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
     setPlacing(true);
     setError("");
     try {
+      // Send the cart snapshot as the order payload so the backend can create the order and its line items together.
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,6 +151,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
     }
   };
 
+  // Search stays entirely client-side because the full menu is already in memory.
   const filtered = search.trim()
     ? menuItems.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
     : menuItems;
