@@ -52,7 +52,7 @@ interface Props {
 // When this is invoked, the employee page will be replaced by the Manager View.
 export default function ManagerView({ employee, onLogout }: Props) {
 
-  const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees" | "x-report">("orders");
+  const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees" | "x-report" | "usage">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [menuItems, setMenuItems] = useState<{ menu_item_id: number; name: string; price: number; image_url: string | null }[]>([]);
@@ -69,6 +69,13 @@ export default function ManagerView({ employee, onLogout }: Props) {
     generatedAt: string;
   } | null>(null);
   const [xReportLoading, setXReportLoading] = useState(false);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const [usageFrom, setUsageFrom] = useState(sevenDaysAgo);
+  const [usageTo, setUsageTo] = useState(today);
+  const [usageData, setUsageData] = useState<{ ingredient_id: number; name: string; qty_in_stock: number; target_qty: number; qty_used: number }[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [editStock, setEditStock] = useState<Record<number, string>>({});
   const [savingAll, setSavingAll] = useState(false);
@@ -140,6 +147,19 @@ export default function ManagerView({ employee, onLogout }: Props) {
       console.error(err);
     } finally {
       setXReportLoading(false);
+    }
+  };
+
+  const fetchUsage = async (from = usageFrom, to = usageTo) => {
+    setUsageLoading(true);
+    try {
+      const res = await fetch(`/api/usage?from=${from}&to=${to}`);
+      if (!res.ok) throw new Error("usage fetch failed");
+      setUsageData(await res.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUsageLoading(false);
     }
   };
 
@@ -418,12 +438,13 @@ export default function ManagerView({ employee, onLogout }: Props) {
       {/* Tabs */}
       <div className="bg-boba-surface border-b border-boba-border">
         <div className="flex justify-center gap-0">
-          {(["orders", "inventory", "menu", "employees", "x-report"] as const).map((t) => (
+          {(["orders", "inventory", "menu", "employees", "x-report", "usage"] as const).map((t) => (
             <button
               key={t}
               onClick={() => {
                 setTab(t);
                 if (t === "x-report") fetchXReport();
+                if (t === "usage") fetchUsage();
               }}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors capitalize ${
                 tab === t
@@ -431,7 +452,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
-              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : t === "employees" ? "Employees" : "X-Report"}
+              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : t === "employees" ? "Employees" : t === "x-report" ? "X-Report" : "Usage"}
             </button>
           ))}
         </div>
@@ -1009,7 +1030,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
               </table>
             </div>
           </div>
-        ) : (
+        ) : tab === "x-report" ? (
           /* ── X-Report tab ── */
           <div>
             <div className="flex items-center justify-between mb-5">
@@ -1098,9 +1119,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   })()}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                   {/* Top items */}
-                  <div className="lg:col-span-2 bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+                  <div className="w-full bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
                     <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
                       <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Top Items Today</h3>
                     </div>
@@ -1135,49 +1155,133 @@ export default function ManagerView({ employee, onLogout }: Props) {
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Right column: status + payment */}
-                  <div className="flex flex-col gap-5">
-                    {/* By status */}
-                    <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
-                      <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
-                        <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Orders by Status</h3>
-                      </div>
-                      <div className="p-4 space-y-2">
-                        {xReport.byStatus.length === 0 ? (
-                          <p className="text-sm text-boba-muted text-center py-4">No orders today</p>
-                        ) : xReport.byStatus.map(({ status, count }) => (
-                          <div key={status} className="flex items-center justify-between">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[status] ?? "bg-boba-subtle text-boba-muted border border-boba-border"}`}>{status}</span>
-                            <span className="text-sm font-semibold text-boba-primary">{count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* By payment */}
-                    <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
-                      <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
-                        <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Payment Methods</h3>
-                      </div>
-                      <div className="p-4 space-y-2">
-                        {xReport.byPayment.length === 0 ? (
-                          <p className="text-sm text-boba-muted text-center py-4">No completed orders</p>
-                        ) : xReport.byPayment.map(({ payment_method, count, revenue }) => (
-                          <div key={payment_method} className="flex items-center justify-between gap-2">
-                            <span className="capitalize text-sm text-boba-primary font-medium">{payment_method}</span>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-boba-accent">${Number(revenue).toFixed(2)}</p>
-                              <p className="text-xs text-boba-muted">{count} order{count !== 1 ? "s" : ""}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
+          </div>
+        ) : (
+          /* ── Usage tab ── */
+          <div>
+            {/* Controls */}
+            <div className="bg-boba-surface rounded-2xl border border-boba-border p-4 mb-5 flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-boba-secondary font-medium">From</label>
+                <input
+                  type="date"
+                  value={usageFrom}
+                  max={usageTo}
+                  onChange={(e) => setUsageFrom(e.target.value)}
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-boba-secondary font-medium">To</label>
+                <input
+                  type="date"
+                  value={usageTo}
+                  min={usageFrom}
+                  max={today}
+                  onChange={(e) => setUsageTo(e.target.value)}
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { label: "Today",    from: today,                                              to: today },
+                  { label: "7 days",   from: new Date(Date.now() - 6  * 86400000).toISOString().slice(0,10), to: today },
+                  { label: "30 days",  from: new Date(Date.now() - 29 * 86400000).toISOString().slice(0,10), to: today },
+                ].map(({ label, from, to }) => (
+                  <button
+                    key={label}
+                    onClick={() => { setUsageFrom(from); setUsageTo(to); fetchUsage(from, to); }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full border border-boba-border text-boba-muted hover:border-boba-accent hover:text-boba-primary transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => fetchUsage()}
+                disabled={usageLoading}
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-40 ml-auto"
+              >
+                {usageLoading ? "Loading…" : "Run Report"}
+              </button>
+            </div>
+
+            {usageLoading && (
+              <div className="flex items-center justify-center py-24">
+                <div className="w-8 h-8 border-4 border-boba-border border-t-boba-accent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!usageLoading && usageData.length === 0 && (
+              <div className="text-center text-boba-muted py-20">
+                <p className="text-4xl mb-3">📦</p>
+                <p>No ingredient usage found for this period</p>
+              </div>
+            )}
+
+            {!usageLoading && usageData.length > 0 && (() => {
+              const maxUsed = usageData[0].qty_used;
+              return (
+                <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+                  {/* Chart header */}
+                  <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Ingredient Usage</h3>
+                    <span className="text-xs text-boba-muted">{usageFrom} → {usageTo}</span>
+                  </div>
+
+                  {/* Horizontal bar chart rows */}
+                  <div className="divide-y divide-boba-border">
+                    {usageData.map((row) => {
+                      const barPct = (row.qty_used / maxUsed) * 100;
+                      const stockPct = row.target_qty > 0
+                        ? Math.min(100, (row.qty_in_stock / row.target_qty) * 100)
+                        : null;
+                      const low = row.target_qty > 0 && row.qty_in_stock < row.target_qty * 0.3;
+                      return (
+                        <div key={row.ingredient_id} className="px-5 py-3 flex items-center gap-4">
+                          {/* Name */}
+                          <div className="w-40 shrink-0">
+                            <span className="text-sm font-medium text-boba-primary">{row.name}</span>
+                            {low && <span className="ml-2 text-xs text-red-500 font-semibold">LOW</span>}
+                          </div>
+
+                          {/* Bar */}
+                          <div className="flex-1 flex items-center gap-3">
+                            <div className="flex-1 bg-boba-border rounded-full h-3 overflow-hidden">
+                              <div
+                                className="h-3 rounded-full bg-boba-accent transition-all"
+                                style={{ width: `${barPct}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-semibold text-boba-primary w-10 text-right shrink-0">
+                              {row.qty_used}
+                            </span>
+                          </div>
+
+                          {/* Current stock */}
+                          <div className="w-36 shrink-0 text-right">
+                            <p className="text-xs text-boba-muted">
+                              stock: <span className={`font-semibold ${low ? "text-red-500" : "text-boba-primary"}`}>{row.qty_in_stock}</span>
+                              {row.target_qty > 0 && <span className="text-boba-muted"> / {row.target_qty}</span>}
+                            </p>
+                            {stockPct !== null && (
+                              <div className="mt-1 w-full bg-boba-border rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${low ? "bg-red-500" : "bg-boba-accent/50"}`}
+                                  style={{ width: `${stockPct}%` }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </main>
