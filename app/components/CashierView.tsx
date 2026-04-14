@@ -48,6 +48,7 @@ export default function CashierView({ employee, onLogout }: Props) {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  // Loads the full order list so the queue can be filtered client-side by status.
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/orders");
@@ -61,11 +62,13 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   useEffect(() => {
     let isMounted = true;
+    // Refresh immediately on entry and then poll so staff see queue changes without manual reloads.
     fetchOrders().then(() => { if (isMounted) setLoading(false); });
     const interval = setInterval(fetchOrders, 5000);
     return () => { isMounted = false; clearInterval(interval); };
   }, [fetchOrders, refreshKey]);
 
+  // Keeps status updates serialized per order card so the UI can show a local spinner.
   const updateStatus = async (orderId: number, status: string) => {
     setUpdatingId(orderId);
     try {
@@ -82,12 +85,14 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   const activeOrders = orders.filter((o) => ACTIVE_STATUSES.includes(o.order_status));
 
+  // Defines the cashier's one-click progression through the active order lifecycle.
   const nextStatus: Record<string, string> = {
     pending: "preparing",
     preparing: "ready",
     ready: "completed",
   };
 
+  // Human-friendly labels that match the next status transition above.
   const nextLabel: Record<string, string> = {
     pending: "start preparing",
     preparing: "mark ready",
@@ -145,6 +150,7 @@ export default function CashierView({ employee, onLogout }: Props) {
       {/* Content */}
       <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
         {tab === "order" ? (
+          // After checkout, bump refreshKey to force a fresh queue fetch and switch staff to the queue tab.
           <OrderingPanel showImages={false} onOrderPlaced={() => { setRefreshKey((k) => k + 1); setTab("queue"); }} />
         ) : (
           <div className="h-full overflow-y-auto">
