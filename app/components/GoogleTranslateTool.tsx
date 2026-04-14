@@ -11,7 +11,6 @@ export default function Translator() {
     // These states handle the text input, translation, and whether the data is received.
     const [text, setText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
-    const [retrievingData, setRetrievingData] = useState(false);
 
     // Function to trigger a Google Translate API call.
     // Asynchronous so that the website can continue to run while it makes the call.
@@ -19,7 +18,6 @@ export default function Translator() {
 
         // POST request to Google Translate.
         // Ensure that the API key is locally set!
-        setRetrievingData(true);
         try {
 
             const res = await fetch("/api/translate", {
@@ -34,8 +32,10 @@ export default function Translator() {
                 }),
             });
 
+            // Wait for the response...
             const data = await res.json();
 
+            // Alert if the translation failed for whatever reason.
             if (!res.ok) {
                 console.error(data);
                 alert("Translation failed");
@@ -43,16 +43,22 @@ export default function Translator() {
                 return;
             }
 
+            // Set the Translated Text to the received data. If nothing was received, set it to a blank.
             setTranslatedText(data.translatedText ?? "");
-        } catch (error) {
+
+        } 
+
+        // Error handling...
+        catch (error) {
+
             console.error(error);
             alert("Translation failed");
             setTranslatedText("");
-        } finally {
-            setRetrievingData(false);
-        }
+        } 
+
     }
 
+    // Simple widget for translating text. It's a proof-of-concept.
     return (
         <div className="bg-black space-y-4">
             <textarea
@@ -65,9 +71,8 @@ export default function Translator() {
             <button
                 className="border px-4 py-2"
                 onClick={handleTranslate}
-                disabled={retrievingData || !text.trim()}
             >
-                {retrievingData ? "Translating..." : "Translate"}
+                Click me to translate!!
             </button>
             <div className="border p-2 min-h-20">{translatedText}</div>
         </div>
