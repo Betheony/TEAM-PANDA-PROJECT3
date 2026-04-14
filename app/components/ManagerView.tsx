@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import ImageEffect from './MagnifierTool';
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 import DarkModeToggle from "./DarkModeToggle";
@@ -384,15 +385,16 @@ export default function ManagerView({ employee, onLogout }: Props) {
       
       {/* Header 
         This controls the top bar that has "Logged in as [ employee ]. */}
-      <header className="bg-boba-surface border-b border-boba-border px-6 py-4 flex items-center justify-between">
+      <header className="bg-[#dd0282] px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           { /* <span className="text-3xl">🧋</span> */ }
           <div>
-            <div className="bg-boba-subtle p-5 rounded-2xl border border-boba-border">
+
+            <div className="bg-black/20 p-5 rounded-lg">
 
               {/* Employee rank & details section */}
-              <h1 className="text-xl font-semibold text-boba-primary">Panda Tea Manager</h1>
-              <p className="text-base text-boba-secondary">
+              <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
+              <p className="text-xl text-white-500">
                 Logged in as <span className="font-semibold">{employee.name}</span>
               </p>
             </div>
@@ -1284,6 +1286,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
             })()}
           </div>
         )}
+
+        <h1 className='text-5xl mb-10 font-bold'>IMAGE MAGNIFIER</h1>
+        <ImageEffect />
       </main>
     </div>
   );
