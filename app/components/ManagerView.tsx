@@ -393,8 +393,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
             <div className="bg-black/20 p-5 rounded-lg">
 
               {/* Employee rank & details section */}
-              <h1 className="text-xl font-semibold text-boba-primary">Panda Tea Manager</h1>
-              <p className="text-base text-boba-secondary">
+              <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
+              <p className="text-xl text-white-500">
                 Logged in as <span className="font-semibold">{employee.name}</span>
               </p>
             </div>
