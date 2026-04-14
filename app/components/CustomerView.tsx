@@ -20,12 +20,6 @@ export default function CustomerView({ onLogout }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <DarkModeToggle />
-          <button
-            onClick={() => { signOut({ callbackUrl: "/" }); onLogout(); }}
-            className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border hover:border-boba-accent px-4 py-1.5 rounded-full transition-colors"
-          >
-            sign out
-          </button>
         </div>
       </header>
 

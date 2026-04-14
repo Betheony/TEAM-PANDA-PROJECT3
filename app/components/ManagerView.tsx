@@ -52,7 +52,7 @@ interface Props {
 // When this is invoked, the employee page will be replaced by the Manager View.
 export default function ManagerView({ employee, onLogout }: Props) {
 
-  const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees">("orders");
+  const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees" | "x-report">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [menuItems, setMenuItems] = useState<{ menu_item_id: number; name: string; price: number; image_url: string | null }[]>([]);
@@ -60,9 +60,18 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [empForm, setEmpForm] = useState({ name: "", role: "cashier", pin: "" });
   const [addingEmp, setAddingEmp] = useState(false);
   const [deletingEmpId, setDeletingEmpId] = useState<number | null>(null);
+  const [xReport, setXReport] = useState<{
+    summary: { total_orders: number; completed_orders: number; total_revenue: string; avg_order_value: string };
+    byStatus: { status: string; count: number }[];
+    byPayment: { payment_method: string; count: number; revenue: string }[];
+    hourly: { hour: number; order_count: number; revenue: string }[];
+    topItems: { name: string; qty: number; revenue: string }[];
+    generatedAt: string;
+  } | null>(null);
+  const [xReportLoading, setXReportLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [editStock, setEditStock] = useState<Record<number, string>>({});
-  const [saving, setSaving] = useState<number | null>(null);
+  const [savingAll, setSavingAll] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [addForm, setAddForm] = useState({ name: "", qty_in_stock: "", target_qty: "" });
@@ -121,6 +130,19 @@ export default function ManagerView({ employee, onLogout }: Props) {
     }
   }, []);
 
+  const fetchXReport = async () => {
+    setXReportLoading(true);
+    try {
+      const res = await fetch("/api/xreport");
+      if (!res.ok) throw new Error("x-report fetch failed");
+      setXReport(await res.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setXReportLoading(false);
+    }
+  };
+
   // Real-time polling every 5 seconds
   useEffect(() => {
     let isMounted = true;
@@ -152,28 +174,31 @@ export default function ManagerView({ employee, onLogout }: Props) {
     fetchOrders();
   };
 
-  const saveStock = async (ingredientId: number) => {
-    const val = editStock[ingredientId];
-    if (val === undefined || val === "") return;
-    setSaving(ingredientId);
+  const saveAllStock = async () => {
+    const changed = Object.entries(editStock).filter(
+      ([id, val]) => val !== "" && val !== String(ingredients.find(i => i.ingredient_id === Number(id))?.qty_in_stock)
+    );
+    if (changed.length === 0) return;
+    setSavingAll(true);
     setError("");
     try {
-      const res = await fetch(`/api/ingredients/${ingredientId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qty_in_stock: Number(val) }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setEditStock((prev) => {
-        const next = { ...prev };
-        delete next[ingredientId];
-        return next;
-      });
+      const results = await Promise.allSettled(
+        changed.map(([id, val]) =>
+          fetch(`/api/ingredients/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ qty_in_stock: Number(val) }),
+          })
+        )
+      );
+      const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok));
+      if (failed.length > 0) setError(`${failed.length} update(s) failed`);
+      setEditStock({});
       fetchIngredients();
     } catch {
-      setError(`Failed to update ingredient ${ingredientId}`);
+      setError("Failed to save changes");
     } finally {
-      setSaving(null);
+      setSavingAll(false);
     }
   };
 
@@ -393,17 +418,20 @@ export default function ManagerView({ employee, onLogout }: Props) {
       {/* Tabs */}
       <div className="bg-boba-surface border-b border-boba-border">
         <div className="flex justify-center gap-0">
-          {(["orders", "inventory", "menu", "employees"] as const).map((t) => (
+          {(["orders", "inventory", "menu", "employees", "x-report"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => {
+                setTab(t);
+                if (t === "x-report") fetchXReport();
+              }}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors capitalize ${
                 tab === t
                   ? "border-boba-accent text-boba-primary"
                   : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
-              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : "Employees"}
+              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : t === "employees" ? "Employees" : "X-Report"}
             </button>
           ))}
         </div>
@@ -644,35 +672,22 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
                         {/* This section controls the tools that update the inventory stocks. */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min="0"
-                              value={
-                                editStock[ing.ingredient_id] !== undefined
-                                  ? editStock[ing.ingredient_id]
-                                  : ing.qty_in_stock
-                              }
-                              onChange={(e) =>
-                                setEditStock((prev) => ({
-                                  ...prev,
-                                  [ing.ingredient_id]: e.target.value,
-                                }))
-                              }
-                              className="w-20 border border-boba-border rounded-lg px-2 py-1 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:ring-1 focus:ring-boba-accent"
-                            />
-                            <button
-                              onClick={() => saveStock(ing.ingredient_id)}
-                              disabled={
-                                saving === ing.ingredient_id ||
-                                editStock[ing.ingredient_id] === undefined ||
-                                editStock[ing.ingredient_id] === String(ing.qty_in_stock)
-                              }
-                              className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
-                            >
-                              {saving === ing.ingredient_id ? "…" : "Save"}
-                            </button>
-                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            value={
+                              editStock[ing.ingredient_id] !== undefined
+                                ? editStock[ing.ingredient_id]
+                                : ing.qty_in_stock
+                            }
+                            onChange={(e) =>
+                              setEditStock((prev) => ({
+                                ...prev,
+                                [ing.ingredient_id]: e.target.value,
+                              }))
+                            }
+                            className="w-20 border border-boba-border rounded-lg px-2 py-1 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                          />
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -688,6 +703,16 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={saveAllStock}
+                disabled={savingAll || Object.keys(editStock).length === 0}
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-sm font-semibold px-6 py-2 rounded-full transition-colors disabled:opacity-40"
+              >
+                {savingAll ? "Saving…" : `Save Changes${Object.keys(editStock).length > 0 ? ` (${Object.keys(editStock).length})` : ""}`}
+              </button>
             </div>
           </div>
         ) : tab === "menu" ? (
@@ -900,7 +925,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
               </div>
             )}
           </div>
-        ) : (
+        ) : tab === "employees" ? (
           /* ── Employees tab ── */
           <div>
             {error && <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>}
@@ -983,6 +1008,176 @@ export default function ManagerView({ employee, onLogout }: Props) {
                 </tbody>
               </table>
             </div>
+          </div>
+        ) : (
+          /* ── X-Report tab ── */
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-boba-primary">X-Report</h2>
+                {xReport && (
+                  <p className="text-xs text-boba-muted mt-0.5">
+                    Generated {new Date(xReport.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={fetchXReport}
+                disabled={xReportLoading}
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+              >
+                {xReportLoading ? "Loading…" : "↻ Refresh"}
+              </button>
+            </div>
+
+            {xReportLoading && !xReport && (
+              <div className="flex items-center justify-center py-24">
+                <div className="w-8 h-8 border-4 border-boba-border border-t-boba-accent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {xReport && (
+              <div className="space-y-5">
+
+                {/* Summary cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    { label: "Orders today", value: xReport.summary.total_orders },
+                    { label: "Completed", value: xReport.summary.completed_orders },
+                    { label: "Total revenue", value: `$${Number(xReport.summary.total_revenue).toFixed(2)}`, accent: true },
+                    { label: "Avg order", value: `$${Number(xReport.summary.avg_order_value).toFixed(2)}` },
+                  ].map(({ label, value, accent }) => (
+                    <div key={label} className="bg-boba-surface rounded-2xl border border-boba-border p-4 text-center">
+                      <p className={`text-2xl font-semibold ${accent ? "text-boba-accent" : "text-boba-primary"}`}>{value}</p>
+                      <p className="text-xs text-boba-muted uppercase tracking-wide mt-1">{label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Hourly bar chart */}
+                <div className="bg-boba-surface rounded-2xl border border-boba-border p-5">
+                  <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide mb-4">Revenue by Hour</h3>
+                  {xReport.hourly.length === 0 ? (
+                    <p className="text-sm text-boba-muted text-center py-8">No completed orders yet today</p>
+                  ) : (() => {
+                    const maxRev = Math.max(...xReport.hourly.map(h => Number(h.revenue)));
+                    // Fill all hours from first to last with zeros for gaps
+                    const minHour = xReport.hourly[0].hour;
+                    const maxHour = xReport.hourly[xReport.hourly.length - 1].hour;
+                    const hourMap = new Map(xReport.hourly.map(h => [h.hour, h]));
+                    const bars = Array.from({ length: maxHour - minHour + 1 }, (_, i) => {
+                      const h = minHour + i;
+                      return hourMap.get(h) ?? { hour: h, order_count: 0, revenue: "0" };
+                    });
+                    return (
+                      <div className="flex items-end gap-1 h-40">
+                        {bars.map(({ hour, order_count, revenue }) => {
+                          const pct = maxRev > 0 ? (Number(revenue) / maxRev) * 100 : 0;
+                          const label = hour === 0 ? "12a" : hour < 12 ? `${hour}a` : hour === 12 ? "12p" : `${hour - 12}p`;
+                          return (
+                            <div key={hour} className="flex-1 flex flex-col items-center gap-1 group relative">
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
+                                <div className="bg-boba-primary text-boba-bg text-xs rounded-lg px-2 py-1 whitespace-nowrap">
+                                  ${Number(revenue).toFixed(2)} · {order_count} order{order_count !== 1 ? "s" : ""}
+                                </div>
+                                <div className="w-1.5 h-1.5 bg-boba-primary rotate-45 -mt-1" />
+                              </div>
+                              <div className="w-full rounded-t-md bg-boba-accent/20 overflow-hidden" style={{ height: "120px" }}>
+                                <div
+                                  className="w-full bg-boba-accent rounded-t-md transition-all"
+                                  style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-boba-muted">{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  {/* Top items */}
+                  <div className="lg:col-span-2 bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+                    <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
+                      <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Top Items Today</h3>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-boba-border">
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-boba-secondary">Item</th>
+                          <th className="text-right px-4 py-2 text-xs font-semibold text-boba-secondary">Qty</th>
+                          <th className="text-right px-4 py-2 text-xs font-semibold text-boba-secondary">Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {xReport.topItems.length === 0 ? (
+                          <tr><td colSpan={3} className="px-4 py-8 text-center text-boba-muted text-sm">No sales yet today</td></tr>
+                        ) : xReport.topItems.map((item, idx) => {
+                          const maxQty = xReport.topItems[0].qty;
+                          return (
+                            <tr key={item.name} className={`border-b border-boba-border ${idx % 2 === 0 ? "" : "bg-boba-subtle/60"}`}>
+                              <td className="px-4 py-2.5">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-medium text-boba-primary text-sm">{item.name}</span>
+                                  <div className="w-full bg-boba-border rounded-full h-1">
+                                    <div className="h-1 rounded-full bg-boba-accent" style={{ width: `${(item.qty / maxQty) * 100}%` }} />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-semibold text-boba-primary">{item.qty}</td>
+                              <td className="px-4 py-2.5 text-right text-boba-accent font-semibold">${Number(item.revenue).toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Right column: status + payment */}
+                  <div className="flex flex-col gap-5">
+                    {/* By status */}
+                    <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+                      <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
+                        <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Orders by Status</h3>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {xReport.byStatus.length === 0 ? (
+                          <p className="text-sm text-boba-muted text-center py-4">No orders today</p>
+                        ) : xReport.byStatus.map(({ status, count }) => (
+                          <div key={status} className="flex items-center justify-between">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[status] ?? "bg-boba-subtle text-boba-muted border border-boba-border"}`}>{status}</span>
+                            <span className="text-sm font-semibold text-boba-primary">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* By payment */}
+                    <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+                      <div className="px-4 py-3 border-b border-boba-border bg-boba-subtle">
+                        <h3 className="text-sm font-semibold text-boba-secondary uppercase tracking-wide">Payment Methods</h3>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {xReport.byPayment.length === 0 ? (
+                          <p className="text-sm text-boba-muted text-center py-4">No completed orders</p>
+                        ) : xReport.byPayment.map(({ payment_method, count, revenue }) => (
+                          <div key={payment_method} className="flex items-center justify-between gap-2">
+                            <span className="capitalize text-sm text-boba-primary font-medium">{payment_method}</span>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-boba-accent">${Number(revenue).toFixed(2)}</p>
+                              <p className="text-xs text-boba-muted">{count} order{count !== 1 ? "s" : ""}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

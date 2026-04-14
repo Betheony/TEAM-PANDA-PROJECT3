@@ -119,12 +119,12 @@ export default function CashierView({ employee, onLogout }: Props) {
             </span>
           )}
           <DarkModeToggle />
-          <button
+          {/* <button
             onClick={onLogout}
             className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-3 py-1.5 rounded-full hover:border-boba-accent transition-colors"
           >
             logout
-          </button>
+          </button> */}
         </div>
       </header>
 
