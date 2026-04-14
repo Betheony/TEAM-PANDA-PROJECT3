@@ -353,7 +353,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
-              {t === "orders" ? "📋 Orders" : t === "inventory" ? "📦 Inventory" : "🍵 Menu"}
+              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : "Menu"}
             </button>
           ))}
         </div>
@@ -481,57 +481,57 @@ export default function ManagerView({ employee, onLogout }: Props) {
             )}
 
             {/* Add ingredient form */}
-            <div className="bg-white rounded-2xl shadow border border-orange-100 p-4 mb-4 flex flex-wrap gap-3 items-end">
+            <div className="bg-boba-surface rounded-2xl border border-boba-border p-4 mb-4 flex flex-wrap gap-3 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">Name</label>
+                <label className="text-xs text-boba-secondary font-medium">Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Tapioca Pearls"
                   value={addForm.name}
                   onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
-                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-48"
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-48"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">Initial Stock</label>
+                <label className="text-xs text-boba-secondary font-medium">Initial Stock</label>
                 <input
                   type="number"
                   min="0"
                   placeholder="0"
                   value={addForm.qty_in_stock}
                   onChange={(e) => setAddForm((p) => ({ ...p, qty_in_stock: e.target.value }))}
-                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-28"
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-28"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">Target Qty</label>
+                <label className="text-xs text-boba-secondary font-medium">Target Qty</label>
                 <input
                   type="number"
                   min="0"
                   placeholder="0"
                   value={addForm.target_qty}
                   onChange={(e) => setAddForm((p) => ({ ...p, target_qty: e.target.value }))}
-                  className="border-2 border-black rounded-lg px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500 w-28"
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-28"
                 />
               </div>
               <button
                 onClick={addIngredient}
                 disabled={adding || !addForm.name.trim()}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
               >
                 {adding ? "Adding…" : "+ Add Ingredient"}
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
+            <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-boba-subtle border-b border-boba-border">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Ingredient</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">In Stock</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Target</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Stock Level</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Update Stock</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Ingredient</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">In Stock</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Target</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Stock Level</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Update Stock</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -645,33 +645,33 @@ export default function ManagerView({ employee, onLogout }: Props) {
           /* ── Menu tab ── */
           <div>
             <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-500">{menuItems.length} items on menu</p>
+              <p className="text-sm text-boba-muted">{menuItems.length} items on menu</p>
               <button
                 onClick={() => { setShowMenuModal(true); setError(""); }}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 + Add Menu Item
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
+            <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-amber-50 border-b border-orange-100">
+                <thead className="bg-boba-subtle border-b border-boba-border">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Price</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Image</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">ID</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Price</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Image</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {menuItems.map((item, idx) => (
-                    <tr key={item.menu_item_id} className={idx % 2 === 0 ? "" : "bg-gray-50/50"}>
-                      <td className="px-4 py-3 text-gray-500">{item.menu_item_id}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800">{item.name}</td>
-                      <td className="px-4 py-3 text-pink-600 font-semibold">${Number(item.price).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{item.image_url || "—"}</td>
+                    <tr key={item.menu_item_id} className={`border-b border-boba-border ${idx % 2 === 0 ? "" : "bg-boba-subtle/60"}`}>
+                      <td className="px-4 py-3 text-boba-muted">{item.menu_item_id}</td>
+                      <td className="px-4 py-3 font-medium text-boba-primary">{item.name}</td>
+                      <td className="px-4 py-3 text-boba-accent font-semibold">${Number(item.price).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-boba-muted text-xs">{item.image_url || "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
@@ -680,7 +680,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               setEditMenuForm({ name: item.name, price: String(item.price), image_url: item.image_url ?? "" });
                               setError("");
                             }}
-                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                            className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                           >
                             Edit
                           </button>
@@ -702,45 +702,45 @@ export default function ManagerView({ employee, onLogout }: Props) {
             {/* Edit Menu Item modal */}
             {editingMenuItem && (
               <div
-                className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                 onClick={(e) => e.target === e.currentTarget && setEditingMenuItem(null)}
               >
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                <div className="bg-boba-surface rounded-2xl border border-boba-border w-full max-w-sm p-6">
                   <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-lg font-bold text-gray-800">Edit Menu Item</h2>
-                    <button onClick={() => setEditingMenuItem(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+                    <h2 className="text-lg font-semibold text-boba-primary">Edit Menu Item</h2>
+                    <button onClick={() => setEditingMenuItem(null)} className="text-boba-muted hover:text-boba-primary text-xl leading-none">✕</button>
                   </div>
 
                   {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
                   <div className="space-y-3 mb-5">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Name *</label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Name *</label>
                       <input
                         type="text"
                         value={editMenuForm.name}
                         onChange={(e) => setEditMenuForm((p) => ({ ...p, name: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Price *</label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Price *</label>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={editMenuForm.price}
                         onChange={(e) => setEditMenuForm((p) => ({ ...p, price: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Image URL <span className="font-normal text-gray-400">(optional)</span></label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Image URL <span className="font-normal text-boba-muted">(optional)</span></label>
                       <input
                         type="text"
                         value={editMenuForm.image_url}
                         onChange={(e) => setEditMenuForm((p) => ({ ...p, image_url: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                   </div>
@@ -748,14 +748,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setEditingMenuItem(null)}
-                      className="flex-1 border border-gray-300 text-gray-500 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-2 rounded-full text-sm transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveMenuItemEdit}
                       disabled={savingMenuItem || !editMenuForm.name.trim() || !editMenuForm.price}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-40"
+                      className="flex-1 bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-40"
                     >
                       {savingMenuItem ? "Saving…" : "Save"}
                     </button>
@@ -767,31 +767,30 @@ export default function ManagerView({ employee, onLogout }: Props) {
             {/* Add Menu Item modal */}
             {showMenuModal && (
               <div
-                className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                 onClick={(e) => e.target === e.currentTarget && setShowMenuModal(false)}
               >
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+                <div className="bg-boba-surface rounded-2xl border border-boba-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
                   <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-lg font-bold text-gray-800">Add Menu Item</h2>
-                    <button onClick={() => setShowMenuModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+                    <h2 className="text-lg font-semibold text-boba-primary">Add Menu Item</h2>
+                    <button onClick={() => setShowMenuModal(false)} className="text-boba-muted hover:text-boba-primary text-xl leading-none">✕</button>
                   </div>
 
                   {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-                  {/* Basic info */}
                   <div className="space-y-3 mb-5">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Name *</label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Name *</label>
                       <input
                         type="text"
                         placeholder="e.g. Taro Milk Tea"
                         value={menuForm.name}
                         onChange={(e) => setMenuForm((p) => ({ ...p, name: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Price *</label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Price *</label>
                       <input
                         type="number"
                         min="0"
@@ -799,35 +798,34 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         placeholder="0.00"
                         value={menuForm.price}
                         onChange={(e) => setMenuForm((p) => ({ ...p, price: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Image URL <span className="font-normal text-gray-400">(optional)</span></label>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Image URL <span className="font-normal text-boba-muted">(optional)</span></label>
                       <input
                         type="text"
                         placeholder="/boba_drawings/mydrink.png"
                         value={menuForm.image_url}
                         onChange={(e) => setMenuForm((p) => ({ ...p, image_url: e.target.value }))}
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
                     </div>
                   </div>
 
-                  {/* Recipe */}
                   <div className="mb-5">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Recipe — qty needed per order <span className="font-normal text-gray-400">(leave 0 to skip)</span></p>
+                    <p className="text-xs text-boba-secondary font-medium mb-2">Recipe — qty needed per order <span className="font-normal text-boba-muted">(leave 0 to skip)</span></p>
                     <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                       {ingredients.map((ing) => (
                         <div key={ing.ingredient_id} className="flex items-center gap-3">
-                          <span className="flex-1 text-sm text-gray-700">{ing.name}</span>
+                          <span className="flex-1 text-sm text-boba-primary">{ing.name}</span>
                           <input
                             type="number"
                             min="0"
                             placeholder="0"
                             value={menuRecipe[ing.ingredient_id] ?? ""}
                             onChange={(e) => setMenuRecipe((p) => ({ ...p, [ing.ingredient_id]: e.target.value }))}
-                            className="w-20 border-2 border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-purple-400"
+                            className="w-20 border border-boba-border rounded-lg px-2 py-1 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                           />
                         </div>
                       ))}
@@ -837,14 +835,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowMenuModal(false)}
-                      className="flex-1 border border-gray-300 text-gray-500 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-2 rounded-full text-sm transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={addMenuItem}
                       disabled={addingMenuItem || !menuForm.name.trim() || !menuForm.price}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-40"
+                      className="flex-1 bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-40"
                     >
                       {addingMenuItem ? "Adding…" : "Add Item"}
                     </button>

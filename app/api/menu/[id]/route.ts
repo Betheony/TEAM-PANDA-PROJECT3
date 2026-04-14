@@ -34,7 +34,19 @@ export async function DELETE(
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // Remove toppings on order items for this menu item
+    await client.query(
+      `DELETE FROM order_item_toppings
+       WHERE order_items_id IN (
+         SELECT order_items_id FROM order_items WHERE menu_item_id = $1
+       )`,
+      [id]
+    );
+    // Remove order items referencing this menu item
+    await client.query(`DELETE FROM order_items WHERE menu_item_id = $1`, [id]);
+    // Remove recipe rows
     await client.query(`DELETE FROM recipe WHERE menu_item_id = $1`, [id]);
+    // Finally delete the menu item itself
     const result = await client.query(
       `DELETE FROM menu_item WHERE menu_item_id = $1 RETURNING *`,
       [id]
