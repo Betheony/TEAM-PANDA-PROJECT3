@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 
+import DarkModeToggle from "./DarkModeToggle"
+
 interface Employee {
   employee_id: number;
   name: string;
@@ -152,6 +154,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-purple-50 flex flex-col">
+
+      <DarkModeToggle />
+
       <LoadingOverlay show={loading} />
       
       {/* Header 
