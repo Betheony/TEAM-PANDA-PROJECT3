@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
+import Translator from "./GoogleTranslateTool";
 
 const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;
@@ -81,6 +82,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4">
         <DarkModeToggle />
+        <Translator />
       </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">

@@ -5,6 +5,7 @@ import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 import DarkModeToggle from "./DarkModeToggle";
 
+
 interface Employee {
   employee_id: number;
   name: string;
@@ -382,6 +383,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
   return (
     <div className="min-h-screen bg-boba-bg flex flex-col">
       <LoadingOverlay show={loading} />
+
+      
       
       {/* Header 
         This controls the top bar that has "Logged in as [ employee ]. */}
