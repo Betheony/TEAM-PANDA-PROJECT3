@@ -52,10 +52,14 @@ interface Props {
 // When this is invoked, the employee page will be replaced by the Manager View.
 export default function ManagerView({ employee, onLogout }: Props) {
 
-  const [tab, setTab] = useState<"orders" | "inventory" | "menu">("orders");
+  const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [menuItems, setMenuItems] = useState<{ menu_item_id: number; name: string; price: number; image_url: string | null }[]>([]);
+  const [employees, setEmployees] = useState<{ employee_id: number; name: string; role: string }[]>([]);
+  const [empForm, setEmpForm] = useState({ name: "", role: "cashier", pin: "" });
+  const [addingEmp, setAddingEmp] = useState(false);
+  const [deletingEmpId, setDeletingEmpId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [editStock, setEditStock] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState<number | null>(null);
@@ -106,11 +110,22 @@ export default function ManagerView({ employee, onLogout }: Props) {
     }
   }, []);
 
+  const fetchEmployees = useCallback(async () => {
+    try {
+      const res = await fetch("/api/employees");
+      if (!res.ok) throw new Error(`employees fetch failed: ${res.status}`);
+      const data = await res.json();
+      setEmployees(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   // Real-time polling every 5 seconds
   useEffect(() => {
     let isMounted = true;
     const loadInitialData = async () => {
-      await Promise.allSettled([fetchOrders(), fetchIngredients(), fetchMenuItems()]);
+      await Promise.allSettled([fetchOrders(), fetchIngredients(), fetchMenuItems(), fetchEmployees()]);
       if (isMounted) setLoading(false);
     };
 
@@ -119,13 +134,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
       fetchOrders();
       fetchIngredients();
       fetchMenuItems();
+      fetchEmployees();
     }, 5000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [fetchOrders, fetchIngredients, fetchMenuItems]);
+  }, [fetchOrders, fetchIngredients, fetchMenuItems, fetchEmployees]);
 
   const updateOrderStatus = async (orderId: number, status: string) => {
     await fetch(`/api/orders/${orderId}`, {
@@ -270,6 +286,40 @@ export default function ManagerView({ employee, onLogout }: Props) {
     }
   };
 
+  const addEmployee = async () => {
+    if (!empForm.name.trim() || !empForm.pin.trim()) return;
+    setAddingEmp(true);
+    setError("");
+    try {
+      const res = await fetch("/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: empForm.name, role: empForm.role, pin: empForm.pin }),
+      });
+      if (!res.ok) throw new Error("Failed to add employee");
+      setEmpForm({ name: "", role: "cashier", pin: "" });
+      fetchEmployees();
+    } catch {
+      setError("Failed to add employee");
+    } finally {
+      setAddingEmp(false);
+    }
+  };
+
+  const deleteEmployee = async (id: number) => {
+    setDeletingEmpId(id);
+    setError("");
+    try {
+      const res = await fetch(`/api/employees/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete employee");
+      fetchEmployees();
+    } catch {
+      setError("Failed to delete employee");
+    } finally {
+      setDeletingEmpId(null);
+    }
+  };
+
   const filteredOrders =
     statusFilter === "all"
       ? orders
@@ -343,7 +393,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
       {/* Tabs */}
       <div className="bg-boba-surface border-b border-boba-border">
         <div className="flex justify-center gap-0">
-          {(["orders", "inventory", "menu"] as const).map((t) => (
+          {(["orders", "inventory", "menu", "employees"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -353,7 +403,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
-              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : "Menu"}
+              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : "Employees"}
             </button>
           ))}
         </div>
@@ -388,7 +438,6 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
             {filteredOrders.length === 0 ? (
               <div className="text-center text-boba-muted py-20">
-                <div className="text-5xl mb-4">📭</div>
                 <p className="text-lg">No orders found</p>
               </div>
             ) : (
@@ -641,7 +690,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
               </table>
             </div>
           </div>
-        ) : (
+        ) : tab === "menu" ? (
           /* ── Menu tab ── */
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -850,6 +899,90 @@ export default function ManagerView({ employee, onLogout }: Props) {
                 </div>
               </div>
             )}
+          </div>
+        ) : (
+          /* ── Employees tab ── */
+          <div>
+            {error && <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>}
+
+            {/* Add employee form */}
+            <div className="bg-boba-surface rounded-2xl border border-boba-border p-4 mb-4 flex flex-wrap gap-3 items-end">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-boba-secondary font-medium">Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Jane"
+                  value={empForm.name}
+                  onChange={(e) => setEmpForm((p) => ({ ...p, name: e.target.value }))}
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-44"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-boba-secondary font-medium">Role</label>
+                <select
+                  value={empForm.role}
+                  onChange={(e) => setEmpForm((p) => ({ ...p, role: e.target.value }))}
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-36"
+                >
+                  <option value="cashier">cashier</option>
+                  <option value="manager">manager</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-boba-secondary font-medium">PIN</label>
+                <input
+                  type="password"
+                  placeholder="••••••"
+                  maxLength={6}
+                  value={empForm.pin}
+                  onChange={(e) => setEmpForm((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))}
+                  className="border border-boba-border rounded-lg px-3 py-1.5 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent w-28"
+                />
+              </div>
+              <button
+                onClick={addEmployee}
+                disabled={addingEmp || !empForm.name.trim() || !empForm.pin.trim()}
+                className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+              >
+                {addingEmp ? "Adding…" : "+ Add Employee"}
+              </button>
+            </div>
+
+            <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-boba-subtle border-b border-boba-border">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">ID</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Role</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((emp, idx) => (
+                    <tr key={emp.employee_id} className={`border-b border-boba-border ${idx % 2 === 0 ? "" : "bg-boba-subtle/60"}`}>
+                      <td className="px-4 py-3 text-boba-muted">{emp.employee_id}</td>
+                      <td className="px-4 py-3 font-medium text-boba-primary">{emp.name}</td>
+                      <td className="px-4 py-3 capitalize text-boba-secondary">{emp.role}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => deleteEmployee(emp.employee_id)}
+                          disabled={deletingEmpId === emp.employee_id}
+                          className="border border-red-300 text-red-500 hover:bg-red-50 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                        >
+                          {deletingEmpId === emp.employee_id ? "…" : "Delete"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {employees.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-10 text-center text-boba-muted">No employees found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
