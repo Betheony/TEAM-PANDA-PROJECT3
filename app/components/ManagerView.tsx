@@ -385,7 +385,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
       
       {/* Header 
         This controls the top bar that has "Logged in as [ employee ]. */}
-      <header className="bg-boba-surface border-b border-boba-border px-6 py-4 flex items-center justify-between">
+      <header className="bg-[#dd0282] border-b border-boba-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           { /* <span className="text-3xl">🧋</span> */ }
           <div>
