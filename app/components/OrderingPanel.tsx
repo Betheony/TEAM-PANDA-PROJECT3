@@ -291,7 +291,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                 onClick={() => setPaymentMethod(m)}
                 className={`flex-1 py-2 rounded-full text-sm transition-colors ${
                   paymentMethod === m
-                    ? "bg-boba-accent text-white"
+                    ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
                     : "border border-boba-border text-boba-muted hover:border-boba-accent"
                 }`}
               >
@@ -305,7 +305,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || placing}
-            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
           >
             {placing ? "placing…" : `place order · $${total.toFixed(2)}`}
           </button>
@@ -351,7 +351,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       onClick={() => toggleTopping(t.topping_id)}
                       className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
                         selectedToppings.includes(t.topping_id)
-                          ? "bg-boba-accent text-white"
+                          ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
                           : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
                       }`}
                     >
@@ -383,7 +383,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
             <button
               onClick={addToCart}
-              className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-3 rounded-full transition-colors font-medium"
+              className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-3 rounded-full transition-colors font-medium"
             >
               add to order
             </button>

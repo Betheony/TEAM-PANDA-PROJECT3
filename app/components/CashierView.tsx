@@ -114,7 +114,7 @@ export default function CashierView({ employee, onLogout }: Props) {
         </div>
         <div className="flex items-center gap-3">
           {activeOrders.length > 0 && (
-            <span className="bg-boba-accent text-white text-xs px-2.5 py-1 rounded-full">
+            <span className="bg-boba-accent text-[var(--boba-accent-foreground)] text-xs px-2.5 py-1 rounded-full">
               {activeOrders.length} active
             </span>
           )}
@@ -209,7 +209,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                           {nextStatus[order.order_status] && (
                             <button
                               onClick={() => updateStatus(order.order_id, nextStatus[order.order_status])}
-                              className="bg-boba-accent hover:bg-boba-accent-hover text-white text-xs px-3 py-1.5 rounded-full transition-colors"
+                              className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs px-3 py-1.5 rounded-full transition-colors"
                             >
                               {nextLabel[order.order_status]}
                             </button>
