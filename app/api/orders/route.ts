@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PoolClient } from 'pg';
 import pool from '@/lib/db';
 
-type DbClient = Awaited<ReturnType<typeof pool.connect>>;
+type DbClient = PoolClient;
 
 type OrderPayload = {
   payment_method: string;
