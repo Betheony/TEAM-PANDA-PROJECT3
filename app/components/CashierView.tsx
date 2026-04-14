@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import OrderingPanel from "./OrderingPanel";
 import LoadingOverlay from "./LoadingOverlay";
+import DarkModeToggle from "./DarkModeToggle";
 
 interface Employee {
   employee_id: number;
@@ -117,6 +118,7 @@ export default function CashierView({ employee, onLogout }: Props) {
               {activeOrders.length} active
             </span>
           )}
+          <DarkModeToggle />
           <button
             onClick={onLogout}
             className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-3 py-1.5 rounded-full hover:border-boba-accent transition-colors"
