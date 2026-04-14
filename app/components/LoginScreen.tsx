@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
+import DarkModeToggle from "./DarkModeToggle";
 
 const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;
@@ -77,7 +78,10 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const padKeys = ["1","2","3","4","5","6","7","8","9"];
 
   return (
-    <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <DarkModeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-5xl tracking-tight text-boba-primary mb-2">panda tea</h1>
@@ -88,7 +92,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
           {/* Customer */}
           <button
             onClick={onCustomerEntry}
-            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-white py-4 rounded-2xl text-base transition-colors"
+            className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-4 rounded-2xl text-base transition-colors"
           >
             customer ordering
           </button>
@@ -141,7 +145,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
                   <button
                     key={key}
                     onClick={() => handleDigit(key)}
-                    className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                    className="bg-boba-bg hover:bg-boba-accent hover:text-[var(--boba-accent-foreground)] text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
                   >
                     {key}
                   </button>
@@ -155,14 +159,14 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
                 </button>
                 <button
                   onClick={() => handleDigit("0")}
-                  className="bg-boba-bg hover:bg-boba-accent hover:text-white text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
+                  className="bg-boba-bg hover:bg-boba-accent hover:text-[var(--boba-accent-foreground)] text-boba-primary text-xl font-medium py-4 rounded-2xl border border-boba-border transition-colors active:scale-95"
                 >
                   0
                 </button>
                 <button
                   onClick={() => submitPin(pin)}
                   disabled={pin.length === 0}
-                  className="bg-boba-accent hover:bg-boba-accent-hover disabled:opacity-30 text-white text-xl py-4 rounded-2xl transition-colors active:scale-95"
+                  className="bg-boba-accent hover:bg-boba-accent-hover disabled:opacity-30 text-[var(--boba-accent-foreground)] text-xl py-4 rounded-2xl transition-colors active:scale-95"
                 >
                   &#10003;
                 </button>

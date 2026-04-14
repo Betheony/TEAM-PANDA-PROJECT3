@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
+import DarkModeToggle from "./DarkModeToggle";
 
 interface Employee {
   employee_id: number;
@@ -33,12 +34,12 @@ interface Ingredient {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  preparing: "bg-blue-100 text-blue-800",
-  ready: "bg-green-100 text-green-800",
-  completed: "bg-gray-100 text-gray-600",
-  cancelled: "bg-red-100 text-red-700",
-  refunded: "bg-orange-100 text-orange-700",
+  pending: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  preparing: "bg-blue-50 text-blue-700 border border-blue-200",
+  ready: "bg-green-50 text-green-700 border border-green-200",
+  completed: "bg-boba-subtle text-boba-muted border border-boba-border",
+  cancelled: "bg-red-50 text-red-600 border border-red-200",
+  refunded: "bg-orange-50 text-orange-700 border border-orange-200",
 };
 
 const ALL_STATUSES = ["all", "pending", "preparing", "ready", "completed", "cancelled", "refunded"];
@@ -48,8 +49,7 @@ interface Props {
   onLogout: () => void;
 }
 
-
-{/* When this is invoked, the employee page will be replaced by the Manager View. */}
+// When this is invoked, the employee page will be replaced by the Manager View.
 export default function ManagerView({ employee, onLogout }: Props) {
 
   const [tab, setTab] = useState<"orders" | "inventory" | "menu">("orders");
@@ -284,62 +284,64 @@ export default function ManagerView({ employee, onLogout }: Props) {
     );
 
   return (
-    <div className="min-h-screen bg-purple-50 flex flex-col">
+    <div className="min-h-screen bg-boba-bg flex flex-col">
       <LoadingOverlay show={loading} />
       
       {/* Header 
         This controls the top bar that has "Logged in as [ employee ]. */}
-      <header className="bg-[#dd0282] px-6 py-4 flex items-center justify-between shadow-sm">
+      <header className="bg-boba-surface border-b border-boba-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           { /* <span className="text-3xl">🧋</span> */ }
           <div>
-
-            <div className="bg-black/20 p-5 rounded-lg">
+            <div className="bg-boba-subtle p-5 rounded-2xl border border-boba-border">
 
               {/* Employee rank & details section */}
-              <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
-              <p className="text-xl text-white-500">
+              <h1 className="text-xl font-semibold text-boba-primary">Panda Tea Manager</h1>
+              <p className="text-base text-boba-secondary">
                 Logged in as <span className="font-semibold">{employee.name}</span>
               </p>
             </div>
           </div>
         </div>
 
-        {/* LOGOUT button */}
-        <button
-          onClick={onLogout}
-          className="text-m font-bold text-white-500 hover:text-gray-700 border-3 border-white-300 px-5 py-1.5 rounded-lg bg-[#262525] hover:bg-gray-50 transition-colors"
-        
-        > Logout </button>
+        <div className="flex items-center gap-3">
+          <DarkModeToggle />
+          <button
+            onClick={onLogout}
+            className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-4 py-2 rounded-full hover:border-boba-accent transition-colors"
+          >
+            logout
+          </button>
+        </div>
       </header>
 
       { /* The below code controls the Stats Bar.
       Includes Total Orders, Completed, Active, and Revenue. */ }
-      <div className="bg-white border-t-5 border-orange-200 px-6 py-3 flex justify-center gap-6">
+      <div className="bg-boba-surface border-b border-boba-border px-6 py-4 flex justify-center gap-6">
         <div className="text-center">
-          <p className="text-2xl font-bold text-pink-600">{orders.length}</p>
-          <p className="text-xs text-gray-500">Total Orders</p>
+          <p className="text-2xl font-semibold text-boba-primary">{orders.length}</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">Total Orders</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-green-600">
+          <p className="text-2xl font-semibold text-boba-primary">
             {orders.filter((o) => o.order_status === "completed").length}
           </p>
-          <p className="text-xs text-gray-500">Completed</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">Completed</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-yellow-600">
+          <p className="text-2xl font-semibold text-boba-primary">
             {orders.filter((o) => ["pending", "preparing", "ready"].includes(o.order_status)).length}
           </p>
-          <p className="text-xs text-gray-500">Active</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">Active</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-amber-700">${totalRevenue.toFixed(2)}</p>
-          <p className="text-xs text-gray-500">Revenue</p>
+          <p className="text-2xl font-semibold text-boba-accent">${totalRevenue.toFixed(2)}</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">Revenue</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b-5 border-t-0 border-l-0 border-r-0 border-orange-200">
+      <div className="bg-boba-surface border-b border-boba-border">
         <div className="flex justify-center gap-0">
           {(["orders", "inventory", "menu"] as const).map((t) => (
             <button
@@ -347,8 +349,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
               onClick={() => setTab(t)}
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors capitalize ${
                 tab === t
-                  ? "border-pink-500 border-b-4 text-pink-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-boba-accent text-boba-primary"
+                  : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
               {t === "orders" ? "📋 Orders" : t === "inventory" ? "📦 Inventory" : "🍵 Menu"}
@@ -373,8 +375,8 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
                     statusFilter === s
-                      ? "bg-blue-500 text-white"
-                      : "bg-white border-3 border-black-300 text-black hover:border-green-300"
+                      ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                      : "bg-boba-surface border border-boba-border text-boba-primary hover:border-boba-accent"
                   }`}
                 >
                   {s}
@@ -385,24 +387,24 @@ export default function ManagerView({ employee, onLogout }: Props) {
             </div>
 
             {filteredOrders.length === 0 ? (
-              <div className="text-center text-gray-400 py-20">
+              <div className="text-center text-boba-muted py-20">
                 <div className="text-5xl mb-4">📭</div>
                 <p className="text-lg">No orders found</p>
               </div>
             ) : (
 
               /* This massive DIV is the big list of orders and their various components. */
-              <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
+              <div className="bg-boba-surface rounded-2xl border border-boba-border overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-amber-50 border-b border-orange-100">
+                  <thead className="bg-boba-subtle border-b border-boba-border">
                     <tr>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Order</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Time</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Items</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Payment</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Total</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-600">Actions</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Order</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Time</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Items</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Payment</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Total</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Status</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -414,23 +416,23 @@ export default function ManagerView({ employee, onLogout }: Props) {
                       return (
                         <tr
                           key={order.order_id}
-                          className={`border-b border-black-5 ${
-                            idx % 2 === 0 ? "" : "bg-gray-50/50"
+                          className={`border-b border-boba-border ${
+                            idx % 2 === 0 ? "" : "bg-boba-subtle/60"
                           }`}
                         >
-                          <td className="px-4 py-3 font-bold text-gray-800">
+                          <td className="px-4 py-3 font-semibold text-boba-primary">
                             #{order.order_id}
                           </td>
-                          <td className="px-4 py-3 text-gray-500">
+                          <td className="px-4 py-3 text-boba-muted">
                             {new Date(order.created_at).toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-gray-700 max-w-xs">
+                          <td className="px-4 py-3 text-boba-primary max-w-xs">
                             {order.items.map((i) => `${i.quantity}× ${i.menu_item_name}`).join(", ")}
                           </td>
-                          <td className="px-4 py-3 capitalize text-gray-600">
+                          <td className="px-4 py-3 capitalize text-boba-secondary">
                             {order.payment_method}
                           </td>
-                          <td className="px-4 py-3 font-semibold text-pink-600">
+                          <td className="px-4 py-3 font-semibold text-boba-accent">
                             ${total.toFixed(2)}
                           </td>
                           <td className="px-4 py-3">
@@ -451,7 +453,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                               onChange={(e) =>
                                 updateOrderStatus(order.order_id, e.target.value)
                               }
-                              className="text-s font-bold text-black bg-white border-2 border-black rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="text-sm font-medium text-boba-primary bg-boba-surface border border-boba-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-boba-accent"
                             >
                               {["pending","preparing","ready","completed","cancelled","refunded"].map((s) => (
                                 <option key={s} value={s}>
@@ -523,7 +525,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
             <div className="bg-white rounded-2xl shadow border border-orange-100 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-amber-50 border-b border-orange-100">
+                <thead className="bg-boba-subtle border-b border-boba-border">
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Ingredient</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">In Stock</th>
@@ -549,13 +551,13 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         in case there are ingredients with similar names. */
                       <tr
                         key={ing.ingredient_id}
-                        className={`border-b border-gray-50 ${
-                          idx % 2 === 0 ? "" : "bg-gray-50/50"
+                        className={`border-b border-boba-border ${
+                          idx % 2 === 0 ? "" : "bg-boba-subtle/60"
                         }`}
                       >
 
                         {/* "LOW" label that appears next to the ingredient when it needs restocking. */}
-                        <td className="px-4 py-3 font-medium text-gray-800">
+                        <td className="px-4 py-3 font-medium text-boba-primary">
                           {ing.name}
                           {low && (
                             <span className="ml-2 text-xs text-red-500 font-semibold">
@@ -565,30 +567,30 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         </td>
 
                         {/* Ingredient quantity in stock label */}
-                        <td className="px-4 py-3 font-semibold text-gray-800">
+                        <td className="px-4 py-3 font-semibold text-boba-primary">
                           {ing.qty_in_stock}
                         </td>
 
                         {/* Target quantity label */}
-                        <td className="px-4 py-3 text-gray-500">{ing.target_qty}</td>
+                        <td className="px-4 py-3 text-boba-muted">{ing.target_qty}</td>
 
                         {/* Inventory tracker percentage bar */}
                         <td className="px-4 py-3 w-40">
 
                           {/* This is the default value (when the inventory stock is at 0% for the ingredient) */}
-                          <div className="w-full bg-gray-300 rounded-full h-2">
+                          <div className="w-full bg-boba-border rounded-full h-2">
                             <div
                               className={`h-2 rounded-full transition-all ${
                                 low
                                   ? "bg-red-500"
                                   : medium
-                                  ? "bg-yellow-400"
-                                  : "bg-green-500"
+                                  ? "bg-yellow-500"
+                                  : "bg-boba-accent"
                               }`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <p className="text-xs text-black mt-1">{Math.round(pct)}%</p>
+                          <p className="text-xs text-boba-primary mt-1">{Math.round(pct)}%</p>
                         </td>
 
                         {/* This section controls the tools that update the inventory stocks. */}
@@ -608,7 +610,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                                   [ing.ingredient_id]: e.target.value,
                                 }))
                               }
-                              className="w-20 border border-black border-2 rounded-lg px-2 py-1 text-sm text-black focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="w-20 border border-boba-border rounded-lg px-2 py-1 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:ring-1 focus:ring-boba-accent"
                             />
                             <button
                               onClick={() => saveStock(ing.ingredient_id)}
@@ -617,7 +619,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                                 editStock[ing.ingredient_id] === undefined ||
                                 editStock[ing.ingredient_id] === String(ing.qty_in_stock)
                               }
-                              className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                              className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
                             >
                               {saving === ing.ingredient_id ? "…" : "Save"}
                             </button>

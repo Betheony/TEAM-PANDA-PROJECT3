@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import OrderingPanel from "./OrderingPanel";
 import LoadingOverlay from "./LoadingOverlay";
+import DarkModeToggle from "./DarkModeToggle";
 
 interface Employee {
   employee_id: number;
@@ -48,6 +49,7 @@ export default function CashierView({ employee, onLogout }: Props) {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  // Loads the full order list so the queue can be filtered client-side by status.
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/orders");
@@ -61,11 +63,13 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   useEffect(() => {
     let isMounted = true;
+    // Refresh immediately on entry and then poll so staff see queue changes without manual reloads.
     fetchOrders().then(() => { if (isMounted) setLoading(false); });
     const interval = setInterval(fetchOrders, 5000);
     return () => { isMounted = false; clearInterval(interval); };
   }, [fetchOrders, refreshKey]);
 
+  // Keeps status updates serialized per order card so the UI can show a local spinner.
   const updateStatus = async (orderId: number, status: string) => {
     setUpdatingId(orderId);
     try {
@@ -82,12 +86,14 @@ export default function CashierView({ employee, onLogout }: Props) {
 
   const activeOrders = orders.filter((o) => ACTIVE_STATUSES.includes(o.order_status));
 
+  // Defines the cashier's one-click progression through the active order lifecycle.
   const nextStatus: Record<string, string> = {
     pending: "preparing",
     preparing: "ready",
     ready: "completed",
   };
 
+  // Human-friendly labels that match the next status transition above.
   const nextLabel: Record<string, string> = {
     pending: "start preparing",
     preparing: "mark ready",
@@ -108,10 +114,11 @@ export default function CashierView({ employee, onLogout }: Props) {
         </div>
         <div className="flex items-center gap-3">
           {activeOrders.length > 0 && (
-            <span className="bg-boba-accent text-white text-xs px-2.5 py-1 rounded-full">
+            <span className="bg-boba-accent text-[var(--boba-accent-foreground)] text-xs px-2.5 py-1 rounded-full">
               {activeOrders.length} active
             </span>
           )}
+          <DarkModeToggle />
           <button
             onClick={onLogout}
             className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-3 py-1.5 rounded-full hover:border-boba-accent transition-colors"
@@ -145,6 +152,7 @@ export default function CashierView({ employee, onLogout }: Props) {
       {/* Content */}
       <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
         {tab === "order" ? (
+          // After checkout, bump refreshKey to force a fresh queue fetch and switch staff to the queue tab.
           <OrderingPanel showImages={false} onOrderPlaced={() => { setRefreshKey((k) => k + 1); setTab("queue"); }} />
         ) : (
           <div className="h-full overflow-y-auto">
@@ -201,7 +209,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                           {nextStatus[order.order_status] && (
                             <button
                               onClick={() => updateStatus(order.order_id, nextStatus[order.order_status])}
-                              className="bg-boba-accent hover:bg-boba-accent-hover text-white text-xs px-3 py-1.5 rounded-full transition-colors"
+                              className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs px-3 py-1.5 rounded-full transition-colors"
                             >
                               {nextLabel[order.order_status]}
                             </button>
