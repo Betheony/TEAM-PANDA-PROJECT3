@@ -1,6 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+type DbClient = Awaited<ReturnType<typeof pool.connect>>;
+
+type OrderPayload = {
+  payment_method: string;
+  items: Array<{
+    menu_item_id: number;
+    quantity: number;
+    unit_price: number;
+    toppings?: Array<{
+      topping_id: number;
+      topping_qty: number;
+    }>;
+  }>;
+};
+
+type RecipeSchema = {
+  ingredientColumn: string;
+  menuItemColumn: string;
+  quantityColumn: string;
+} | null;
+
+async function getTableColumns(client: DbClient, tableName: string) {
+  const result = await client.query<{ column_name: string }>(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = $1`,
+    [tableName]
+  );
+
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+function pickColumn(columns: Set<string>, candidates: string[]) {
+  return candidates.find((column) => columns.has(column)) ?? null;
+}
+
+async function resolveRecipeSchema(client: DbClient): Promise<RecipeSchema> {
+  const recipeColumns = await getTableColumns(client, 'recipe');
+  if (recipeColumns.size === 0) {
+    return null;
+  }
+
+  const ingredientColumn = pickColumn(recipeColumns, ['ingredient_id']);
+  const menuItemColumn = pickColumn(recipeColumns, ['menu_item_id']);
+  const quantityColumn = pickColumn(recipeColumns, ['qty_needed', 'quantity', 'qty', 'amount']);
+
+  if (!ingredientColumn || !menuItemColumn || !quantityColumn) {
+    throw new Error('Recipe table exists but does not expose the expected inventory columns');
+  }
+
+  return {
+    ingredientColumn,
+    menuItemColumn,
+    quantityColumn,
+  };
+}
+
+async function deductToppingInventory(
+  client: DbClient,
+  toppings: NonNullable<OrderPayload['items'][number]['toppings']>,
+  itemQuantity: number
+) {
+  for (const topping of toppings) {
+    await client.query(
+      `UPDATE ingredient
+       SET qty_in_stock = GREATEST(0, qty_in_stock - $1)
+       WHERE ingredient_id = (
+         SELECT ingredient_id
+         FROM topping
+         WHERE topping_id = $2
+       )`,
+      [topping.topping_qty * itemQuantity, topping.topping_id]
+    );
+  }
+}
+
+async function deductRecipeInventory(
+  client: DbClient,
+  recipeSchema: RecipeSchema,
+  menuItemId: number,
+  itemQuantity: number
+) {
+  if (!recipeSchema) {
+    return;
+  }
+
+  const { ingredientColumn, menuItemColumn, quantityColumn } = recipeSchema;
+
+  await client.query(
+    `UPDATE ingredient AS i
+     SET qty_in_stock = GREATEST(0, i.qty_in_stock - (r."${quantityColumn}" * $1))
+     FROM recipe AS r
+     WHERE r."${ingredientColumn}" = i.ingredient_id
+       AND r."${menuItemColumn}" = $2`,
+    [itemQuantity, menuItemId]
+  );
+}
+
 export async function GET() {
   try {
     const result = await pool.query(`
@@ -40,10 +138,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { items, payment_method } = await req.json();
+  const { items, payment_method }: OrderPayload = await req.json();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const recipeSchema = await resolveRecipeSchema(client);
 
     const orderResult = await client.query(
       `INSERT INTO "order" (payment_method, order_status) VALUES ($1, 'pending') RETURNING *`,
@@ -65,27 +164,10 @@ export async function POST(req: NextRequest) {
            VALUES ($1, $2, $3)`,
           [order_items_id, topping.topping_id, topping.topping_qty]
         );
-        // Deduct topping ingredient stock
-        await client.query(
-          `UPDATE ingredient
-           SET qty_in_stock = GREATEST(0, qty_in_stock - $1)
-           WHERE ingredient_id = (SELECT ingredient_id FROM topping WHERE topping_id = $2)`,
-          [topping.topping_qty * item.quantity, topping.topping_id]
-        );
       }
 
-      // Deduct recipe ingredients (best-effort: ignore if recipe table schema differs)
-      try {
-        await client.query(
-          `UPDATE ingredient i
-           SET qty_in_stock = GREATEST(0, i.qty_in_stock - (r.qty_needed * $1))
-           FROM recipe r
-           WHERE r.ingredient_id = i.ingredient_id AND r.menu_item_id = $2`,
-          [item.quantity, item.menu_item_id]
-        );
-      } catch (_) {
-        // recipe table may have different schema; skip silently
-      }
+      await deductToppingInventory(client, item.toppings || [], item.quantity);
+      await deductRecipeInventory(client, recipeSchema, item.menu_item_id, item.quantity);
     }
 
     await client.query('COMMIT');

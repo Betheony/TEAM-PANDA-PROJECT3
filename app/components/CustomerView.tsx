@@ -1,6 +1,7 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
 import OrderingPanel from "./OrderingPanel";
+import DarkModeToggle from "./DarkModeToggle";
 
 interface Props {
   onLogout: () => void;
@@ -17,12 +18,15 @@ export default function CustomerView({ onLogout }: Props) {
           <h1 className="text-2xl tracking-tight text-boba-primary">panda tea</h1>
           <p className="text-sm text-boba-secondary italic">welcome back, {session?.user?.name?.split(" ")[0] ?? "guest"}</p>
         </div>
-        <button
-          onClick={() => { signOut({ callbackUrl: "/" }); onLogout(); }}
-          className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border hover:border-boba-accent px-4 py-1.5 rounded-full transition-colors"
-        >
-          sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <DarkModeToggle />
+          <button
+            onClick={() => { signOut({ callbackUrl: "/" }); onLogout(); }}
+            className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border hover:border-boba-accent px-4 py-1.5 rounded-full transition-colors"
+          >
+            sign out
+          </button>
+        </div>
       </header>
 
       {/* Main */}

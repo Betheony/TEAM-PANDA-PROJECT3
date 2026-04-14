@@ -16,19 +16,19 @@
   --boba-accent-hover: #b89689;
 }
 
-:root[data-theme="dark"] {
-  --background: #181311;
-  --foreground: #f7f1ee;
+:root[data-theme="contrast"] {
+  --background: #000000;
+  --foreground: #ffffff;
 
-  --boba-bg: #211a18;
-  --boba-surface: #2a2220;
-  --boba-subtle: #342b28;
-  --boba-border: #4a3f3a;
-  --boba-primary: #f2e7e2;
-  --boba-secondary: #d3c2bc;
-  --boba-muted: #a8948d;
-  --boba-accent: #d6a189;
-  --boba-accent-hover: #e0b39d;
+  --boba-bg: #000000;
+  --boba-surface: #000000;
+  --boba-subtle: #111111;
+  --boba-border: #ffffff;
+  --boba-primary: #ffffff;
+  --boba-secondary: #f2f2f2;
+  --boba-muted: #d9d9d9;
+  --boba-accent: #ffffff;
+  --boba-accent-hover: #d9d9d9;
 }
 
 @theme inline {
