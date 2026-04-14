@@ -14,6 +14,7 @@
   --boba-muted: #b8aba6;
   --boba-accent: #c9a69c;
   --boba-accent-hover: #b89689;
+  --boba-accent-foreground: #ffffff;
 }
 
 :root[data-theme="contrast"] {
@@ -29,6 +30,7 @@
   --boba-muted: #d9d9d9;
   --boba-accent: #ffffff;
   --boba-accent-hover: #d9d9d9;
+  --boba-accent-foreground: #000000;
 }
 
 @theme inline {

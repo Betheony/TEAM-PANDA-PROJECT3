@@ -242,7 +242,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
                     statusFilter === s
-                      ? "bg-boba-accent text-white"
+                      ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
                       : "bg-boba-surface border border-boba-border text-boba-primary hover:border-boba-accent"
                   }`}
                 >
@@ -445,7 +445,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                                 editStock[ing.ingredient_id] === undefined ||
                                 editStock[ing.ingredient_id] === String(ing.qty_in_stock)
                               }
-                              className="bg-boba-accent hover:bg-boba-accent-hover text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                              className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
                             >
                               {saving === ing.ingredient_id ? "…" : "Save"}
                             </button>
