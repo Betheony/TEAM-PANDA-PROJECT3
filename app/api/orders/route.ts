@@ -144,6 +144,79 @@ export async function POST(req: NextRequest) {
     await client.query('BEGIN');
     const recipeSchema = await resolveRecipeSchema(client);
 
+    // ── 1. Aggregate required ingredient quantities across all order items ──
+    // Collect recipe requirements
+    const needed = new Map<number, { name: string; qty: number }>();
+
+    for (const item of items) {
+      const recipeRows = await client.query(
+        `SELECT r.ingredient_id, r.qty_needed, i.name
+         FROM recipe r
+         JOIN ingredient i ON i.ingredient_id = r.ingredient_id
+         WHERE r.menu_item_id = $1`,
+        [item.menu_item_id]
+      );
+      for (const row of recipeRows.rows) {
+        const total = (row.qty_needed as number) * item.quantity;
+        const prev = needed.get(row.ingredient_id);
+        needed.set(row.ingredient_id, {
+          name: row.name,
+          qty: (prev?.qty ?? 0) + total,
+        });
+      }
+
+      // Also collect topping requirements
+      for (const topping of (item.toppings || [])) {
+        const toppingRow = await client.query(
+          `SELECT t.ingredient_id, i.name
+           FROM topping t
+           JOIN ingredient i ON i.ingredient_id = t.ingredient_id
+           WHERE t.topping_id = $1`,
+          [topping.topping_id]
+        );
+        if (toppingRow.rows.length > 0) {
+          const { ingredient_id, name } = toppingRow.rows[0];
+          const total = topping.topping_qty * item.quantity;
+          const prev = needed.get(ingredient_id);
+          needed.set(ingredient_id, {
+            name,
+            qty: (prev?.qty ?? 0) + total,
+          });
+        }
+      }
+    }
+
+    // ── 2. Lock ingredient rows and check availability ──
+    if (needed.size > 0) {
+      const ingredientIds = Array.from(needed.keys());
+      const stockRows = await client.query(
+        `SELECT ingredient_id, name, qty_in_stock
+         FROM ingredient
+         WHERE ingredient_id = ANY($1)
+         FOR UPDATE`,
+        [ingredientIds]
+      );
+
+      const insufficient: string[] = [];
+      for (const row of stockRows.rows) {
+        const required = needed.get(row.ingredient_id)!;
+        if (row.qty_in_stock < required.qty) {
+          insufficient.push(
+            `${required.name} (need ${required.qty}, have ${row.qty_in_stock})`
+          );
+        }
+      }
+
+      if (insufficient.length > 0) {
+        await client.query('ROLLBACK');
+        return NextResponse.json(
+          { error: `Insufficient stock: ${insufficient.join('; ')}` },
+          { status: 409 }
+        );
+      }
+    }
+
+    // ── 3. Insert the order and items ──
     const orderResult = await client.query(
       `INSERT INTO "order" (payment_method, order_status) VALUES ($1, 'pending') RETURNING *`,
       [payment_method]
@@ -165,9 +238,14 @@ export async function POST(req: NextRequest) {
           [order_items_id, topping.topping_id, topping.topping_qty]
         );
       }
+    }
 
-      await deductToppingInventory(client, item.toppings || [], item.quantity);
-      await deductRecipeInventory(client, recipeSchema, item.menu_item_id, item.quantity);
+    // ── 4. Deduct all ingredient stock in one pass ──
+    for (const [ingredient_id, { qty }] of needed.entries()) {
+      await client.query(
+        `UPDATE ingredient SET qty_in_stock = qty_in_stock - $1 WHERE ingredient_id = $2`,
+        [qty, ingredient_id]
+      );
     }
 
     await client.query('COMMIT');

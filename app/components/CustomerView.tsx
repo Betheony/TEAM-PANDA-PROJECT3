@@ -4,7 +4,7 @@ import OrderingPanel from "./OrderingPanel";
 import DarkModeToggle from "./DarkModeToggle";
 
 interface Props {
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 export default function CustomerView({ onLogout }: Props) {
