@@ -98,7 +98,22 @@ export default function CustomerView() {
 
       {/* Main */}
       <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 73px)" }}>
-        <OrderingPanel />
+        <div className="flex h-full min-h-0 flex-col gap-4">
+          <iframe
+            data-testid="embed-iframe"
+            title="Spotify player"
+            className="w-full shrink-0 rounded-lg"
+            src="https://open.spotify.com/embed/playlist/3c4K2LUr8Yi1ATUZXb6xzR?utm_source=generator"
+            height="152"
+            frameBorder="0"
+            allowFullScreen
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+          <div className="min-h-0 flex-1">
+            <OrderingPanel />
+          </div>
+        </div>
       </main>
     </div>
   );
