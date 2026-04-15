@@ -8,6 +8,7 @@ const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;
 
 interface Props {
+
   onCustomerEntry: () => void;
   onCashierLogin: () => void;
 }
@@ -16,11 +17,15 @@ interface Props {
 const doTranslation = true;
 
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
+
+
   const [showCashierForm, setShowCashierForm] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
 
+  // Variables that contain the text to be displayed on the screen.
+  // This is implemented this way to support the Google Translate API.
   const [loginScreenText, setloginScreenText] = useState(
 
     {
@@ -32,6 +37,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     }
   );
 
+  // This handles the translation...
   useEffect(() => {
     let cancelled = false;
 
@@ -42,6 +48,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
 
       try {
 
+        // Iterate through the various website texts and then translate them with the API call function.
         for (const key in loginScreenText) {
           
           console.log(key, loginScreenText[key]);
@@ -58,6 +65,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
         }
       } 
       catch (error) {
+
         console.error("Failed to translate...", error);
       }
     }
@@ -65,6 +73,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     loadTranslation();
 
     return () => {
+
       cancelled = true;
     };
   }, []);
