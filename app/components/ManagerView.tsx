@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import ImageEffect from './MagnifierTool';
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 import DarkModeToggle from "./DarkModeToggle";

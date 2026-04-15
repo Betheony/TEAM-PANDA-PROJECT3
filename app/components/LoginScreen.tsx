@@ -9,6 +9,7 @@ import {
   translate_text
 }
 from "./GoogleTranslateTool";
+import { truncate } from "fs";
 
 translate_text("Hello, this is a test!");
 
@@ -20,7 +21,23 @@ interface Props {
   onCashierLogin: () => void;
 }
 
+let do_translation = true;
+
+// This function will be used for every single text.
+// If "do_translate" is true, the text will be set to the translated text (Spanish)
+// Otherwise, return the original text.
+function translation_wrapper(text, do_translate) {
+
+  if(do_translate == true) {
+
+    return translate_text(text);
+  }
+
+  else return text;
+}
+
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
+
   const [showCashierForm, setShowCashierForm] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -62,7 +79,9 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   pinRef.current = pin;
 
   useEffect(() => {
+
     if (!showCashierForm) return;
+
     const onKey = (e: KeyboardEvent) => {
       if (/^[0-9]$/.test(e.key)) {
         const current = pinRef.current;
@@ -87,6 +106,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const padKeys = ["1","2","3","4","5","6","7","8","9"];
 
   return (
+
     <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4">
         <DarkModeToggle />
@@ -112,7 +132,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
               onClick={() => setShowCashierForm(true)}
               className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
             >
-              cashier login
+              Cashier Login
             </button>
           ) : (
             <div className="bg-boba-surface rounded-3xl p-6 border border-boba-border">

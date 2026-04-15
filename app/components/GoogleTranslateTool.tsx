@@ -36,19 +36,25 @@ export async function translate_text(text_to_translate) {
         const data = await res.json();
 
         // Alert if the translation failed for whatever reason.
+        // Then, return an error message.
         if (!res.ok) {
 
             console.error(data);
-            throw new Error("Translation failed...");
+            
+            return "Could not translate the text.";
         }
 
+        // Log the translated text for bug testing...
         console.log(data.translatedText ?? "");
+
+        return data.translatedText ?? "Could not translate the text.";
     } 
 
     // Error handling...
+    // Also return an error message.
     catch (error) {
 
         console.error(error);
+        return "Could not translate the text.";
     } 
-
 }
