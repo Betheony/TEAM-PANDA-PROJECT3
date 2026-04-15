@@ -12,6 +12,7 @@ interface Props {
   onCashierLogin: () => void;
 }
 
+// This decides if the page will be translated or not.
 const doTranslation = true;
 
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
@@ -20,7 +21,16 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
 
-  const [cashierLoginText, setCashierLoginText] = useState("Cashier Login");
+  const [loginScreenText, setloginScreenText] = useState(
+
+    {
+      login_text: "Cashier Login",
+      title: "Panda Tea",
+      subtitle: "Boba Tea Shop",
+      customer_ordering: "Customer Ordering",
+      manager_login: "Manager Login"
+    }
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -31,12 +41,24 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
       if (!doTranslation) return;
 
       try {
-        const translated = await translate_text("Cashier Login");
-        if (!cancelled && translated) {
-          setCashierLoginText(translated);
+
+        for (const key in loginScreenText) {
+          
+          console.log(key, loginScreenText[key]);
+          const translated = await translate_text(loginScreenText[key]);
+          console.log(translated);
+
+          if (!cancelled && translated) {
+
+            setloginScreenText((prev) => ({
+              ...prev,
+              [key]: translated,
+            }));
+          }
         }
-      } catch (error) {
-        console.error("Failed to translate Cashier Login:", error);
+      } 
+      catch (error) {
+        console.error("Failed to translate...", error);
       }
     }
 
@@ -117,8 +139,8 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
 
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-5xl tracking-tight text-boba-primary mb-2">panda tea</h1>
-          <p className="text-boba-secondary italic">boba tea shop</p>
+          <h1 className="text-5xl tracking-tight text-boba-primary mb-2">{loginScreenText["title"]}</h1>
+          <p className="text-boba-secondary italic">{loginScreenText["subtitle"]}</p>
         </div>
 
         <div className="space-y-3">
@@ -126,7 +148,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
             onClick={onCustomerEntry}
             className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-4 rounded-2xl text-base transition-colors"
           >
-            customer ordering
+            {loginScreenText["customer_ordering"]}
           </button>
 
           {!showCashierForm ? (
@@ -134,7 +156,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
               onClick={() => setShowCashierForm(true)}
               className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
             >
-              {cashierLoginText}
+              {loginScreenText["login_text"]}
             </button>
           ) : (
             <div className="bg-boba-surface rounded-3xl p-6 border border-boba-border">
@@ -210,7 +232,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
             onClick={() => signIn("google")}
             className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
           >
-            manager login
+            {loginScreenText["manager_login"]}
           </button>
         </div>
       </div>
