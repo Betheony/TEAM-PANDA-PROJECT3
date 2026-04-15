@@ -2,79 +2,53 @@
 /* This is the component that handles translations. */
 /* Right now it's just a proof-of-concept. It only takes in an input. I need to expand it to work with the entire webpage. -Ben */
 
+/* ON DEPLOYMENT, CHANGE THE URL TO THE ACTUAL WEBSITE URL!!! */
+
 "use client";
 import { useState } from "react";
 
-export default function Translator() {
+// THIS NEEDS TO BE CHANGED ON DEPLOYMENT!!!
+let api_url = "http://localhost:3000/api/translate" 
 
-    // States are required because updating them triggers a re-render.
-    // These states handle the text input, translation, and whether the data is received.
-    const [text, setText] = useState("");
-    const [translatedText, setTranslatedText] = useState("");
+// Function to trigger a Google Translate API call.
+// Asynchronous so that the website can continue to run while it makes the call.
+export async function translate_text(text_to_translate) {
 
-    // Function to trigger a Google Translate API call.
-    // Asynchronous so that the website can continue to run while it makes the call.
-    async function handleTranslate() {
+    // POST request to Google Translate.
+    // Ensure that the API key is locally set!
+    try {
 
-        // POST request to Google Translate.
-        // Ensure that the API key is locally set!
-        try {
+        const res = await fetch(api_url, {
 
-            const res = await fetch("/api/translate", {
+            method: "POST",
+            headers: {
 
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    text,
-                    target: "es",
-                }),
-            });
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
 
-            // Wait for the response...
-            const data = await res.json();
+                text: text_to_translate,
+                target: "es",
+            }),
+        });
 
-            // Alert if the translation failed for whatever reason.
-            if (!res.ok) {
-                console.error(data);
-                alert("Translation failed");
-                setTranslatedText("");
-                return;
-            }
+        // Wait for the response...
+        const data = await res.json();
 
-            // Set the Translated Text to the received data. If nothing was received, set it to a blank.
-            setTranslatedText(data.translatedText ?? "");
+        // Alert if the translation failed for whatever reason.
+        if (!res.ok) {
 
-        } 
+            console.error(data);
+            throw new Error("Translation failed...");
+        }
 
-        // Error handling...
-        catch (error) {
+        console.log(data.translatedText ?? "");
+    } 
 
-            console.error(error);
-            alert("Translation failed");
-            setTranslatedText("");
-        } 
+    // Error handling...
+    catch (error) {
 
-    }
+        console.error(error);
+    } 
 
-    // Simple widget for translating text. It's a proof-of-concept.
-    return (
-        <div className="bg-black space-y-4">
-            <textarea
-                className="border p-2 w-full"
-                rows={5}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Enter text"
-            />
-            <button
-                className="border px-4 py-2"
-                onClick={handleTranslate}
-            >
-                Click me to translate!!
-            </button>
-            <div className="border p-2 min-h-20">{translatedText}</div>
-        </div>
-    );
 }
