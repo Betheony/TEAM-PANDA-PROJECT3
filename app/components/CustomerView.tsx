@@ -5,6 +5,7 @@ import OrderingPanel from "./OrderingPanel";
 import DarkModeToggle from "./DarkModeToggle";
 
 interface WeatherSummary {
+  location: string;
   temp: number;
   high: number;
   low: number;
@@ -41,34 +42,75 @@ export default function CustomerView() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const url = new URL("https://api.open-meteo.com/v1/forecast");
-    url.search = new URLSearchParams({
-      latitude: "30.2672",
-      longitude: "-97.7431",
-      current: "temperature_2m,weather_code",
-      daily: "temperature_2m_max,temperature_2m_min",
-      temperature_unit: "fahrenheit",
+    const fallbackLocation = {
+      latitude: 30.2672,
+      longitude: -97.7431,
       timezone: "America/Chicago",
-      forecast_days: "1",
-    }).toString();
+      name: "Austin",
+    };
 
-    fetch(url, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error("Weather unavailable");
-        return res.json();
-      })
-      .then((data) => {
-        const code = Number(data.current?.weather_code);
-        setWeather({
-          temp: Math.round(Number(data.current?.temperature_2m)),
-          high: Math.round(Number(data.daily?.temperature_2m_max?.[0])),
-          low: Math.round(Number(data.daily?.temperature_2m_min?.[0])),
-          label: weatherLabels[code] ?? "Forecast",
+    const loadWeather = (
+      latitude: number,
+      longitude: number,
+      timezone: string,
+      location: string
+    ) => {
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.search = new URLSearchParams({
+        latitude: String(latitude),
+        longitude: String(longitude),
+        current: "temperature_2m,weather_code",
+        daily: "temperature_2m_max,temperature_2m_min",
+        temperature_unit: "fahrenheit",
+        timezone,
+        forecast_days: "1",
+      }).toString();
+
+      fetch(url, { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error("Weather unavailable");
+          return res.json();
+        })
+        .then((data) => {
+          const code = Number(data.current?.weather_code);
+          setWeather({
+            location,
+            temp: Math.round(Number(data.current?.temperature_2m)),
+            high: Math.round(Number(data.daily?.temperature_2m_max?.[0])),
+            low: Math.round(Number(data.daily?.temperature_2m_min?.[0])),
+            label: weatherLabels[code] ?? "Forecast",
+          });
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setWeather(null);
         });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setWeather(null);
-      });
+    };
+
+    const loadFallbackWeather = () => {
+      loadWeather(
+        fallbackLocation.latitude,
+        fallbackLocation.longitude,
+        fallbackLocation.timezone,
+        fallbackLocation.name
+      );
+    };
+
+    if (!navigator.geolocation) {
+      loadFallbackWeather();
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          loadWeather(
+            position.coords.latitude,
+            position.coords.longitude,
+            Intl.DateTimeFormat().resolvedOptions().timeZone || "auto",
+            "Local"
+          );
+        },
+        loadFallbackWeather,
+        { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 5000 }
+      );
+    }
 
     return () => controller.abort();
   }, []);
@@ -84,7 +126,7 @@ export default function CustomerView() {
         <div className="flex items-center gap-3">
           {weather && (
             <div className="hidden sm:flex items-center gap-2 rounded-lg border border-boba-border bg-boba-subtle px-3 py-2 text-sm text-boba-primary">
-              <span className="font-medium">Austin</span>
+              <span className="font-medium">{weather.location}</span>
               <span>{weather.temp}°F</span>
               <span className="text-boba-secondary">{weather.label}</span>
               <span className="text-boba-muted">
