@@ -14,7 +14,8 @@ interface Props {
 }
 
 // This decides if the page will be translated or not.
-const doTranslation = true;
+// Global variable, and can be updated as needed.
+let doTranslation = false;
 
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
 
@@ -23,6 +24,20 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
+
+  const loginScreenText_English = {
+
+    login_text: "Cashier Login",
+    title: "Panda Tea",
+    subtitle: "Boba Tea Shop",
+    customer_ordering: "Customer Ordering",
+    manager_login: "Manager Login"
+  }
+
+  const loginScreenText_Spanish = {
+
+    
+  }
 
   // Variables that contain the text to be displayed on the screen.
   // This is implemented this way to support the Google Translate API.
@@ -38,46 +53,37 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   );
 
   // This handles the translation...
-  useEffect(() => {
-    
-    let cancelled = false;
+  async function loadTranslation() {
 
-    // Test translation, will be removed later.
-    async function loadTranslation() {
+    doTranslation = ! doTranslation
+    if ( ! doTranslation ) return;
 
-      if (!doTranslation) return;
+    try {
 
-      try {
+      // Iterate through the various website texts and then translate them with the API call function.
+      for (const key in loginScreenText) {
+        
+        console.log(key, loginScreenText[key]);
+        const translated = await translate_text(loginScreenText[key]);
+        console.log(translated);
 
-        // Iterate through the various website texts and then translate them with the API call function.
-        for (const key in loginScreenText) {
-          
-          console.log(key, loginScreenText[key]);
-          const translated = await translate_text(loginScreenText[key]);
-          console.log(translated);
+        if (translated) {
 
-          if (!cancelled && translated) {
-
-            setloginScreenText((prev) => ({
-              ...prev,
-              [key]: translated,
-            }));
-          }
+          setloginScreenText((prev) => ({
+            ...prev,
+            [key]: translated,
+          }));
         }
-      } 
-      catch (error) {
-
-        console.error("Failed to translate...", error);
       }
+    } 
+    catch (error) {
+
+      console.error("Failed to translate...", error);
     }
+  }
 
-    loadTranslation();
 
-    return () => {
 
-      cancelled = true;
-    };
-  }, []);
 
   const handleDigit = (digit: string) => {
     if (pin.length >= MAX_PIN_LENGTH) return;
@@ -145,7 +151,19 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4">
         <DarkModeToggle />
-        <TranslateButton />
+
+          {/* Button to do a translation. */}
+          <button
+          type="button"
+          onClick={loadTranslation}
+          className="inline-flex items-center gap-2 
+              rounded-full border border-boba-border bg-boba-surface 
+              px-3 py-2 text-sm text-boba-primary transition-colors 
+              hover:border-boba-accent hover:bg-boba-subtle"
+          >
+              {/* Use the value from the React State. */}
+          {doTranslation ? "Translate to English" : "Translate to Spanish"}
+      </button>
       </div>
 
       <div className="w-full max-w-sm">
