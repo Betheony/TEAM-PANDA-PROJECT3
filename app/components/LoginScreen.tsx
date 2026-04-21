@@ -17,6 +17,38 @@ interface Props {
 // Global variable, and can be updated as needed.
 let doTranslation = false;
 
+
+// This will contain the English translations for all the website text.
+// Fill it with any text that needs to be displayed.
+const loginScreenText_English = {
+
+  login_text: "Cashier Login",
+  title: "Panda Tea",
+  subtitle: "Boba Tea Shop",
+  customer_ordering: "Customer Ordering",
+  manager_login: "Manager Login"
+}
+
+// This will contain the Spanish translations for all the website text.
+// Populated through a loop (see below)
+const loginScreenText_Spanish = {
+
+}
+// Iterate through the various website texts and then use them to populate the Spanish struct.
+for (const key in loginScreenText_English) {
+  
+  console.log(key, loginScreenText_English[key]);
+  const translated = translate_text(loginScreenText_English[key]);
+  console.log(translated);
+
+  if (translated) {
+
+    loginScreenText_Spanish[key] = translated;
+  }
+}
+
+
+
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
 
 
@@ -25,61 +57,36 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
 
-  const loginScreenText_English = {
-
-    login_text: "Cashier Login",
-    title: "Panda Tea",
-    subtitle: "Boba Tea Shop",
-    customer_ordering: "Customer Ordering",
-    manager_login: "Manager Login"
-  }
-
-  const loginScreenText_Spanish = {
-
-    
-  }
-
   // Variables that contain the text to be displayed on the screen.
   // This is implemented this way to support the Google Translate API.
-  const [loginScreenText, setloginScreenText] = useState(
+  const [loginScreenText, setloginScreenText] = useState(loginScreenText_English);
 
-    {
-      login_text: "Cashier Login",
-      title: "Panda Tea",
-      subtitle: "Boba Tea Shop",
-      customer_ordering: "Customer Ordering",
-      manager_login: "Manager Login"
-    }
-  );
-
-  // This handles the translation...
+  // Translation function that maps the website
   async function loadTranslation() {
 
+
     doTranslation = ! doTranslation
-    if ( ! doTranslation ) return;
 
-    try {
+    // Iterate through the various website texts and then translate them with the API call function.
+    for (const key in loginScreenText_English) {
 
-      // Iterate through the various website texts and then translate them with the API call function.
-      for (const key in loginScreenText) {
-        
-        console.log(key, loginScreenText[key]);
-        const translated = await translate_text(loginScreenText[key]);
-        console.log(translated);
+      // Depending if the translation is to be done, set the website text to be English or Spanish.
+      if (doTranslation) {
 
-        if (translated) {
-
-          setloginScreenText((prev) => ({
-            ...prev,
-            [key]: translated,
-          }));
-        }
+        setloginScreenText((prev) => ({
+          ...prev,
+          [key]: loginScreenText_Spanish[key],
+        }));
       }
-    } 
-    catch (error) {
+      else {
 
-      console.error("Failed to translate...", error);
+        setloginScreenText((prev) => ({
+          ...prev,
+          [key]: loginScreenText_English[key],
+        }));
+      }
     }
+
   }
 
 
