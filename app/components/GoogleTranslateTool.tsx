@@ -83,13 +83,13 @@ export async function translate_text(text_to_translate) {
  * @param text_English 
  * @param text_Spanish 
  */
-export function translate_struct_text( text_English: any, text_Spanish: any ) {
+export async function translate_struct_text( text_English: any, text_Spanish: any ) {
 
     // Iterate through the various website texts and then use them to populate the Spanish struct.
     for (const key in text_English) {
     
         console.log(key, text_English[key]);
-        const translated = translate_text(text_English[key]);
+        const translated = await translate_text(text_English[key]);
         console.log(translated);
 
         if (translated) {

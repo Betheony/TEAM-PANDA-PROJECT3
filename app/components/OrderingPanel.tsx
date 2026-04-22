@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { translate_struct_text } from "./GoogleTranslateTool";
 
+let doTranslation = false;
+
 interface MenuItem {
   menu_item_id: number;
   name: string;
@@ -41,12 +43,17 @@ interface Props {
 const orderScreenText_English_Static = {
 
     placing: "placing...",
-    place_order: "place order"
+    place_order: "place order",
+    cart_is_empty: "cart is empty",
+    total: "total",
+    order: "Order",
+    search_menu: "Search the menu for a beverage"
 }
 
 // This will contain the Spanish translations for the static website text.
 // Populated through a loop (see below)
 const orderScreenText_Spanish_Static = {}
+const orderScreenText_Spanish_Dynamic = {}
 
 // Populate the Spanish translation struct.
 translate_struct_text(orderScreenText_English_Static, orderScreenText_Spanish_Static);
@@ -68,6 +75,46 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
   // UseState for all static text (text that doesn't change)
   const [orderScreenText_Static, setOrderScreenText_Static] = useState(orderScreenText_English_Static); 
+
+  // Translation function that maps the STATIC website text to a given text struct (English or Spanish)
+  function loadTranslation_Static() {
+
+    // Negate the variable that decides what language to translate to.
+    // This is done to allow for easy language switching.
+    doTranslation = ! doTranslation
+
+    // Iterate through the various website texts and then translate them with the API call function.
+    for (const key in orderScreenText_English_Static) {
+
+      // Depending if the translation is to be done, set the website text to be English or Spanish.
+      if (doTranslation) {
+
+        setOrderScreenText_Static((prev) => ({
+          ...prev,
+          [key]: orderScreenText_Spanish_Static[key],
+        }));
+      }
+      else {
+
+        setOrderScreenText_Static((prev) => ({
+          ...prev,
+          [key]: orderScreenText_English_Static[key],
+        }));
+      }
+
+    }
+  }
+
+  // This will eventually map DYNAMIC text to a given language struct.
+  function loadTranslation_Dynamic() {}
+
+
+  // Translation function that maps the website text to a given text struct (English or Spanish)
+  // Currently maps the static text; later, it'll need to map dynamic text.
+  function loadTranslation() {
+
+    loadTranslation_Static();
+  }
 
   useEffect(() => {
     // Load both menu items and available toppings up front so the panel can stay client-driven after mount.
@@ -186,6 +233,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
   return (
     <div className="flex gap-4 h-full min-h-0">
+
       {/* Menu */}
       <div className="flex-1 flex flex-col min-h-0 gap-3">
         {/* Search bar */}
@@ -194,7 +242,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="search menu..."
+          placeholder={orderScreenText_Static["search_menu"]}
           className="w-full border border-boba-border rounded-xl px-4 py-2 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:border-boba-accent placeholder:text-boba-muted shrink-0"
         />
 
@@ -243,7 +291,21 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
       {/* Cart */}
       <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border self-start sticky top-0 max-h-[calc(100vh-140px)]">
-        <h2 className="text-lg text-boba-primary mb-3 shrink-0">order</h2>
+        
+        {/* Button to do a translation. */}
+          <button
+          type="button"
+          onClick={loadTranslation}
+          className="inline-flex items-center gap-2 
+              rounded-full border border-boba-border bg-boba-surface 
+              px-3 py-2 text-sm text-boba-primary transition-colors 
+              hover:border-boba-accent hover:bg-boba-subtle"
+          >
+              {/* Use the value from the React State. */}
+          {doTranslation ? "Translate to English" : "Translate to Spanish"}
+          </button>
+        
+        <h2 className="text-lg text-boba-primary mb-3 shrink-0">{orderScreenText_Static["order"]}</h2>
 
         {success && (
           <div className="bg-boba-subtle border border-boba-accent text-boba-primary rounded-xl p-2 mb-3 text-sm shrink-0">
@@ -253,7 +315,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {cart.length === 0 ? (
-            <p className="text-boba-muted text-sm text-center mt-8 italic">cart is empty</p>
+            <p className="text-boba-muted text-sm text-center mt-8 italic">{orderScreenText_Static["cart_is_empty"]}</p>
           ) : (
             <div className="space-y-2">
               {cart.map((item) => (
@@ -300,7 +362,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
         <div className="pt-3 border-t border-boba-border space-y-2 shrink-0">
           <div className="flex items-baseline justify-between px-1">
-            <span className="text-boba-secondary text-sm">total</span>
+            <span className="text-boba-secondary text-sm">{orderScreenText_Static["total"]}</span>
             <span className="text-2xl text-boba-primary">${total.toFixed(2)}</span>
           </div>
 
@@ -328,7 +390,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
             disabled={cart.length === 0 || placing}
             className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-3 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
           >
-            {placing ? "placing…" : `place order · $${total.toFixed(2)}`}
+            {placing ? orderScreenText_Static["placing"] : orderScreenText_Static["place_order"]}
           </button>
 
           {cart.length > 0 && (

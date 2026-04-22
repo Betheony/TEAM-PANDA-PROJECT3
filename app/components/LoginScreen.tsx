@@ -158,7 +158,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
           >
               {/* Use the value from the React State. */}
           {doTranslation ? "Translate to English" : "Translate to Spanish"}
-      </button>
+        </button>
       </div>
 
       <div className="w-full max-w-sm">
