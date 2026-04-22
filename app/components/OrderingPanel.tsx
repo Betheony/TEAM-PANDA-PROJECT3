@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { loadTranslation, translate_text } from "./GoogleTranslateTool";
+import { translate_text, translate_struct_text } from "./GoogleTranslateTool";
 
 interface MenuItem {
   menu_item_id: number;
@@ -46,29 +46,10 @@ const orderScreenText_English_Static = {
 
 // This will contain the Spanish translations for the static website text.
 // Populated through a loop (see below)
-const orderScreenText_Spanish_Static = {
+const orderScreenText_Spanish_Static = {}
 
-}
-
-loadTranslation(orderScreenText_English_Static, orderScreenText_Spanish_Static);
-
-// Function to translate DYNAMIC text.
-// TODO: Make Dynamic structs.
-function populate_dynamic_translated_text() {
-
-  // Iterate through the various website texts and then use them to populate the Spanish struct.
-  for (const key in orderScreenText_English_Static) {
-    
-    console.log(key, orderScreenText_English_Static[key]);
-    const translated = translate_text(orderScreenText_English_Static[key]);
-    console.log(translated);
-
-    if (translated) {
-
-      orderScreenText_Spanish_Static[key] = translated;
-    }
-  }
-}
+// Populate the Spanish translation struct.
+translate_struct_text(orderScreenText_English_Static, orderScreenText_Spanish_Static);
 
 export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);

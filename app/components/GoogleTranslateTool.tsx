@@ -72,7 +72,7 @@ export async function translate_text(text_to_translate) {
  * @param text_updater A State Updater function. 
  * @returns doTranslation
  */
-export function loadTranslation( text_English: any, text_Spanish: any ) {
+export function translate_struct_text( text_English: any, text_Spanish: any ) {
 
     // Iterate through the various website texts and then use them to populate the Spanish struct.
     for (const key in text_English) {
