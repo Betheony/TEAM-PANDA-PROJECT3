@@ -13,44 +13,7 @@ let api_url = "http://localhost:3000/api/translate"
 // Global variable (readable anywhere)
 let do_translate = false;
 
-// Getter
-export function return_do_translate() {
-  return do_translate;
-}
 
-// Simple button component that updates the variable for doing the translation.
-export const TranslateButton = () => {
-
-    // Use a React state to force a re-render.
-    const [translate, setTranslate] = useState(false);
-
-    // Function that triggers when a click is done.
-    // Updates the transition boolean and forces a re-render.
-    const handleClick = () => {
-
-        const new_translation_bool = !translate;
-
-        // Update React state (causes re-render)
-        setTranslate( new_translation_bool );
-
-        // Sync the global variable
-        do_translate = new_translation_bool;
-    };
-
-  return (
-    <button
-        type="button"
-        onClick={handleClick}
-        className="inline-flex items-center gap-2 
-            rounded-full border border-boba-border bg-boba-surface 
-            px-3 py-2 text-sm text-boba-primary transition-colors 
-            hover:border-boba-accent hover:bg-boba-subtle"
-        >
-            {/* Use the value from the React State. */}
-        {translate ? "Translate to English" : "Translate to Spanish"}
-    </button>
-  );
-};
 
 // Function to trigger a Google Translate API call.
 // Asynchronous so that the website can continue to run while it makes the call

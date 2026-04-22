@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
-import { translate_text, TranslateButton, return_do_translate } from "./GoogleTranslateTool";
+import { translate_text } from "./GoogleTranslateTool";
 
 const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;
@@ -64,7 +64,8 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   // Translation function that maps the website
   async function loadTranslation() {
 
-
+    // Negate the variable that decides what language to translate to.
+    // This is done to allow for easy language switching.
     doTranslation = ! doTranslation
 
     // Iterate through the various website texts and then translate them with the API call function.
@@ -85,8 +86,8 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
           [key]: loginScreenText_English[key],
         }));
       }
-    }
 
+    }
   }
 
 
