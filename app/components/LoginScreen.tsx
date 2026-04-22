@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
-import { translate_struct_text, loadTranslation } from "./GoogleTranslateTool";
+import { translate_struct_text } from "./GoogleTranslateTool";
 
 const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;

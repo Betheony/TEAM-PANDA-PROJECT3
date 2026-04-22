@@ -76,35 +76,6 @@ export async function translate_text(text_to_translate) {
  * @param text_updater A State Updater function. 
  * @returns doTranslation
  */
-function loadTranslation(doTranslation: boolean, text_English: any, text_Spanish: any, text_updater: any) {
-
-    // Negate the variable that decides what language to translate to.
-    // This is done to allow for easy language switching.
-    doTranslation = ! doTranslation
-
-    // Iterate through the various website texts and then translate them with the API call function.
-    for (const key in text_English) {
-
-      // Depending if the translation is to be done, set the website text to be English or Spanish.
-      if (doTranslation) {
-
-        text_updater((prev) => ({
-          ...prev,
-          [key]: text_Spanish[key],
-        }));
-      }
-      else {
-
-        text_updater((prev) => ({
-          ...prev,
-          [key]: text_English[key],
-        }));
-      }
-
-    }
-
-    return doTranslation;
-}
 
 
 /**
