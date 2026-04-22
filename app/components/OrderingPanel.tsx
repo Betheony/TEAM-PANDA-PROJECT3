@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { translate_text, translate_struct_text } from "./GoogleTranslateTool";
+import { translate_struct_text } from "./GoogleTranslateTool";
 
 interface MenuItem {
   menu_item_id: number;

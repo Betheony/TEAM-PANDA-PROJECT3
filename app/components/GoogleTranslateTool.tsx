@@ -66,11 +66,51 @@ export async function translate_text(text_to_translate) {
 
 /**
  * 
+ * Function that maps text in a language struct to a struct that contains the data to display.
+ * Also returns the boolean "doTranslation" for keeping track of what language is being displayed (English or Spanish)
+ * Requires the translation variable, the language structs, and a state updater.
+ * 
  * @param doTranslation Boolean variable that decides what language to translate to.
  * @param text_English The English text, stored in a JSON-like object.
  * @param text_Spanish The Spanish text, stored in a JSON-like object.
  * @param text_updater A State Updater function. 
  * @returns doTranslation
+ */
+function loadTranslation(doTranslation: boolean, text_English: any, text_Spanish: any, text_updater: any) {
+
+    // Negate the variable that decides what language to translate to.
+    // This is done to allow for easy language switching.
+    doTranslation = ! doTranslation
+
+    // Iterate through the various website texts and then translate them with the API call function.
+    for (const key in text_English) {
+
+      // Depending if the translation is to be done, set the website text to be English or Spanish.
+      if (doTranslation) {
+
+        text_updater((prev) => ({
+          ...prev,
+          [key]: text_Spanish[key],
+        }));
+      }
+      else {
+
+        text_updater((prev) => ({
+          ...prev,
+          [key]: text_English[key],
+        }));
+      }
+
+    }
+
+    return doTranslation;
+}
+
+
+/**
+ * 
+ * @param text_English 
+ * @param text_Spanish 
  */
 export function translate_struct_text( text_English: any, text_Spanish: any ) {
 
