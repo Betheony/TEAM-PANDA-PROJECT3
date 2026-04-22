@@ -39,6 +39,7 @@ const weatherLabels: Record<number, string> = {
 export default function CustomerView() {
   const { data: session } = useSession();
   const [weather, setWeather] = useState<WeatherSummary | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -83,6 +84,9 @@ export default function CustomerView() {
         })
         .catch(() => {
           if (!controller.signal.aborted) setWeather(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setWeatherLoading(false);
         });
     };
 
@@ -124,6 +128,11 @@ export default function CustomerView() {
           <p className="text-sm text-boba-secondary italic">welcome back, {session?.user?.name?.split(" ")[0] ?? "guest"}</p>
         </div>
         <div className="flex items-center gap-3">
+          {weatherLoading && (
+            <div className="hidden sm:flex items-center justify-center rounded-lg border border-boba-border bg-boba-subtle px-3 py-2">
+              <div className="h-4 w-4 rounded-full border-2 border-boba-border border-t-boba-accent animate-spin" />
+            </div>
+          )}
           {weather && (
             <div className="hidden sm:flex items-center gap-2 rounded-lg border border-boba-border bg-boba-subtle px-3 py-2 text-sm text-boba-primary">
               <span className="font-medium">{weather.location}</span>
