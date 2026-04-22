@@ -379,6 +379,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
       0
     );
 
+
   return (
     <div className="min-h-screen bg-boba-bg flex flex-col">
       <LoadingOverlay show={loading} />

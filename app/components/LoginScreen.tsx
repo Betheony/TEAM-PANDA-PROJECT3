@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
-import { translate_text } from "./GoogleTranslateTool";
+import { translate_text, loadTranslation } from "./GoogleTranslateTool";
 
 const CASHIER_PIN = "123456";
 const MAX_PIN_LENGTH = 6;
@@ -35,19 +35,7 @@ const loginScreenText_Spanish = {
 
 }
 // Iterate through the various website texts and then use them to populate the Spanish struct.
-for (const key in loginScreenText_English) {
-  
-  console.log(key, loginScreenText_English[key]);
-  const translated = translate_text(loginScreenText_English[key]);
-  console.log(translated);
-
-  if (translated) {
-
-    loginScreenText_Spanish[key] = translated;
-  }
-}
-
-
+loadTranslation(loginScreenText_English, loginScreenText_Spanish);
 
 export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) {
 

@@ -5,14 +5,9 @@
 /* ON DEPLOYMENT, CHANGE THE URL TO THE ACTUAL WEBSITE URL!!! */
 
 "use client";
-import React, { useEffect, useState } from "react";
 
 // THIS NEEDS TO BE CHANGED ON DEPLOYMENT!!!
 let api_url = "http://localhost:3000/api/translate" 
-
-// Global variable (readable anywhere)
-let do_translate = false;
-
 
 
 // Function to trigger a Google Translate API call.
@@ -65,4 +60,30 @@ export async function translate_text(text_to_translate) {
         console.error(error);
         return "Could not translate the text.";
     } 
+}
+
+// Translation function that maps the website's text to display to either the English Text or Spanish Text.
+
+/**
+ * 
+ * @param doTranslation Boolean variable that decides what language to translate to.
+ * @param text_English The English text, stored in a JSON-like object.
+ * @param text_Spanish The Spanish text, stored in a JSON-like object.
+ * @param text_updater A State Updater function. 
+ * @returns doTranslation
+ */
+export function loadTranslation( text_English: any, text_Spanish: any ) {
+
+    // Iterate through the various website texts and then use them to populate the Spanish struct.
+    for (const key in text_English) {
+    
+        console.log(key, text_English[key]);
+        const translated = translate_text(text_English[key]);
+        console.log(translated);
+
+        if (translated) {
+
+            text_Spanish[key] = translated;
+        }
+    }
 }

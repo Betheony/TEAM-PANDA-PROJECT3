@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { loadTranslation, translate_text } from "./GoogleTranslateTool";
 
 interface MenuItem {
   menu_item_id: number;
@@ -34,6 +35,41 @@ interface Props {
   showImages?: boolean;
 }
 
+// This will contain the English translations for any website text that does NOT change.
+// Dynamic text will need to be put in its own object.
+// Fill it with any text that needs to be displayed.
+const orderScreenText_English_Static = {
+
+    placing: "placing...",
+    place_order: "place order"
+}
+
+// This will contain the Spanish translations for the static website text.
+// Populated through a loop (see below)
+const orderScreenText_Spanish_Static = {
+
+}
+
+loadTranslation(orderScreenText_English_Static, orderScreenText_Spanish_Static);
+
+// Function to translate DYNAMIC text.
+// TODO: Make Dynamic structs.
+function populate_dynamic_translated_text() {
+
+  // Iterate through the various website texts and then use them to populate the Spanish struct.
+  for (const key in orderScreenText_English_Static) {
+    
+    console.log(key, orderScreenText_English_Static[key]);
+    const translated = translate_text(orderScreenText_English_Static[key]);
+    console.log(translated);
+
+    if (translated) {
+
+      orderScreenText_Spanish_Static[key] = translated;
+    }
+  }
+}
+
 export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
@@ -48,6 +84,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // UseState for all static text (text that doesn't change)
+  const [orderScreenText_Static, setOrderScreenText_Static] = useState(orderScreenText_English_Static); 
 
   useEffect(() => {
     // Load both menu items and available toppings up front so the panel can stay client-driven after mount.
@@ -302,6 +341,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
+          {/* Button for Placing the Order. */}
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || placing}
