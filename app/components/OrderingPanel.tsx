@@ -302,7 +302,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
               hover:border-boba-accent hover:bg-boba-subtle"
           >
               {/* Use the value from the React State. */}
-          {doTranslation ? "Translate to English" : "Translate to Spanish"}
+          {doTranslation ? "Translate to English" : "Traducir al español"}
           </button>
         
         <h2 className="text-lg text-boba-primary mb-3 shrink-0">{orderScreenText_Static["order"]}</h2>

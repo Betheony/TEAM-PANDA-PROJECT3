@@ -157,7 +157,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
               hover:border-boba-accent hover:bg-boba-subtle"
           >
               {/* Use the value from the React State. */}
-          {doTranslation ? "Translate to English" : "Translate to Spanish"}
+          {doTranslation ? "Translate to English" : "Traducir al español"}
         </button>
       </div>
 
