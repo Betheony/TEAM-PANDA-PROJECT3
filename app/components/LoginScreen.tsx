@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
 import { translate_struct_text } from "./GoogleTranslateTool";
@@ -36,6 +35,17 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
+  const [authError] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return new URLSearchParams(window.location.search).get("error");
+  });
+  const managerError =
+    authError === "AccessDenied"
+      ? "This Google account is not approved for manager access."
+      : "";
 
   /*
     Tracks the currently displayed language.
@@ -113,7 +123,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     setError("");
   };
 
-  const submitPin = (value: string) => {
+  const submitPin = useCallback((value: string) => {
     if (value === CASHIER_PIN) {
       onCashierLogin();
     } else {
@@ -129,7 +139,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
       setPin("");
       setTimeout(() => setShake(false), 500);
     }
-  };
+  }, [onCashierLogin]);
 
   const handleCancel = () => {
     setShowCashierForm(false);
@@ -145,7 +155,10 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     otherwise accidentally capture old state values.
   */
   const pinRef = useRef(pin);
-  pinRef.current = pin;
+
+  useEffect(() => {
+    pinRef.current = pin;
+  }, [pin]);
 
   useEffect(() => {
     if (!showCashierForm) return;
@@ -174,7 +187,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
     window.addEventListener("keydown", onKey);
 
     return () => window.removeEventListener("keydown", onKey);
-  }, [showCashierForm, loginScreenText]);
+  }, [showCashierForm, submitPin]);
 
   const padKeys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -300,6 +313,9 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
           >
             {loginScreenText.manager_login}
           </button>
+          {managerError ? (
+            <p className="text-red-400 text-sm text-center">{managerError}</p>
+          ) : null}
         </div>
       </div>
     </div>
