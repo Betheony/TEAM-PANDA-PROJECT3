@@ -16,6 +16,9 @@ interface OrderItem {
   menu_item_name: string;
   quantity: number;
   unit_price: number;
+  size?: string;
+  sugar_level?: string;
+  ice_level?: string;
   toppings: { name: string; topping_qty: number }[];
 }
 
@@ -133,6 +136,9 @@ export default function CashierView({ employee, onLogout }: Props) {
   const paymentLabel = (method: string) =>
     cashierText[method as keyof typeof cashierTextEnglish] ?? method;
 
+  const customizationLabel = (item: OrderItem) =>
+    `${item.size ?? "medium"}, ${item.sugar_level ?? "100%"} sugar, ${item.ice_level ?? "less ice"}`;
+
   async function loadTranslation() {
     const shouldSwitchToSpanish = !isSpanish;
 
@@ -244,6 +250,9 @@ export default function CashierView({ employee, onLogout }: Props) {
                           <span className="text-boba-primary">
                             {item.quantity}× {item.menu_item_name}
                           </span>
+                          <p className="text-xs text-boba-muted ml-4">
+                            {customizationLabel(item)}
+                          </p>
                           {item.toppings.length > 0 && (
                             <p className="text-xs text-boba-muted ml-4">
                               + {item.toppings.map((t) => t.name).join(", ")}

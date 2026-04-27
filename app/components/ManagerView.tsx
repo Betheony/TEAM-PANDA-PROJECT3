@@ -17,6 +17,9 @@ interface OrderItem {
   menu_item_name: string;
   quantity: number;
   unit_price: number;
+  size?: string;
+  sugar_level?: string;
+  ice_level?: string;
   toppings: { name: string }[];
 }
 
@@ -428,6 +431,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const paymentLabel = (method: string) =>
     managerText[method as keyof typeof managerTextEnglish] ?? method;
 
+  const customizationLabel = (item: OrderItem) =>
+    `${item.size ?? "medium"}, ${item.sugar_level ?? "100%"} sugar, ${item.ice_level ?? "less ice"}`;
+
   async function loadTranslation() {
     const shouldSwitchToSpanish = !isSpanish;
 
@@ -611,7 +617,19 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             {new Date(order.created_at).toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-boba-primary max-w-xs">
-                            {order.items.map((i) => `${i.quantity}× ${i.menu_item_name}`).join(", ")}
+                            <div className="space-y-1">
+                              {order.items.map((i) => (
+                                <div key={i.order_items_id}>
+                                  <p>{i.quantity}× {i.menu_item_name}</p>
+                                  <p className="text-xs text-boba-muted">
+                                    {customizationLabel(i)}
+                                    {i.toppings.length > 0
+                                      ? ` + ${i.toppings.map((t) => t.name).join(", ")}`
+                                      : ""}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
                           </td>
                           <td className="px-4 py-3 capitalize text-boba-secondary">
                             {paymentLabel(order.payment_method)}

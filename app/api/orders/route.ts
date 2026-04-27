@@ -10,6 +10,9 @@ type OrderPayload = {
     menu_item_id: number;
     quantity: number;
     unit_price: number;
+    size?: string;
+    sugar_level?: string;
+    ice_level?: string;
     toppings?: Array<{
       topping_id: number;
       topping_qty: number;
@@ -17,11 +20,11 @@ type OrderPayload = {
   }>;
 };
 
-type RecipeSchema = {
-  ingredientColumn: string;
-  menuItemColumn: string;
-  quantityColumn: string;
-} | null;
+type OrderItemCustomizationSchema = {
+  hasSize: boolean;
+  hasSugarLevel: boolean;
+  hasIceLevel: boolean;
+};
 
 async function getTableColumns(client: DbClient, tableName: string) {
   const result = await client.query<{ column_name: string }>(
@@ -34,108 +37,129 @@ async function getTableColumns(client: DbClient, tableName: string) {
   return new Set(result.rows.map((row) => row.column_name));
 }
 
-function pickColumn(columns: Set<string>, candidates: string[]) {
-  return candidates.find((column) => columns.has(column)) ?? null;
-}
-
-async function resolveRecipeSchema(client: DbClient): Promise<RecipeSchema> {
-  const recipeColumns = await getTableColumns(client, 'recipe');
-  if (recipeColumns.size === 0) {
-    return null;
-  }
-
-  const ingredientColumn = pickColumn(recipeColumns, ['ingredient_id']);
-  const menuItemColumn = pickColumn(recipeColumns, ['menu_item_id']);
-  const quantityColumn = pickColumn(recipeColumns, ['qty_needed', 'quantity', 'qty', 'amount']);
-
-  if (!ingredientColumn || !menuItemColumn || !quantityColumn) {
-    throw new Error('Recipe table exists but does not expose the expected inventory columns');
-  }
+async function resolveOrderItemCustomizationSchema(
+  client: DbClient
+): Promise<OrderItemCustomizationSchema> {
+  const orderItemColumns = await getTableColumns(client, 'order_items');
 
   return {
-    ingredientColumn,
-    menuItemColumn,
-    quantityColumn,
+    hasSize: orderItemColumns.has('size'),
+    hasSugarLevel: orderItemColumns.has('sugar_level'),
+    hasIceLevel: orderItemColumns.has('ice_level'),
   };
 }
 
-async function deductToppingInventory(
-  client: DbClient,
-  toppings: NonNullable<OrderPayload['items'][number]['toppings']>,
-  itemQuantity: number
+function normalizeDrinkCustomization(
+  item: OrderPayload['items'][number],
+  schema: OrderItemCustomizationSchema
 ) {
-  for (const topping of toppings) {
-    await client.query(
-      `UPDATE ingredient
-       SET qty_in_stock = GREATEST(0, qty_in_stock - $1)
-       WHERE ingredient_id = (
-         SELECT ingredient_id
-         FROM topping
-         WHERE topping_id = $2
-       )`,
-      [topping.topping_qty * itemQuantity, topping.topping_id]
-    );
-  }
-}
-
-async function deductRecipeInventory(
-  client: DbClient,
-  recipeSchema: RecipeSchema,
-  menuItemId: number,
-  itemQuantity: number
-) {
-  if (!recipeSchema) {
-    return;
-  }
-
-  const { ingredientColumn, menuItemColumn, quantityColumn } = recipeSchema;
-
-  await client.query(
-    `UPDATE ingredient AS i
-     SET qty_in_stock = GREATEST(0, i.qty_in_stock - (r."${quantityColumn}" * $1))
-     FROM recipe AS r
-     WHERE r."${ingredientColumn}" = i.ingredient_id
-       AND r."${menuItemColumn}" = $2`,
-    [itemQuantity, menuItemId]
-  );
+  return {
+    size: schema.hasSize && ['medium', 'large'].includes(item.size ?? '')
+      ? item.size
+      : 'medium',
+    sugar_level: schema.hasSugarLevel && ['0%', '50%', '100%'].includes(item.sugar_level ?? '')
+      ? item.sugar_level
+      : '100%',
+    ice_level: schema.hasIceLevel && ['hot', 'less ice', 'more ice'].includes(item.ice_level ?? '')
+      ? item.ice_level
+      : 'less ice',
+  };
 }
 
 export async function GET() {
   try {
-    const result = await pool.query(`
-      SELECT
-        o.order_id, o.created_at, o.payment_method, o.order_status,
-        COALESCE(json_agg(
-          json_build_object(
-            'order_items_id', oi.order_items_id,
-            'menu_item_id', oi.menu_item_id,
-            'menu_item_name', mi.name,
-            'quantity', oi.quantity,
-            'unit_price', oi.unit_price,
-            'toppings', (
-              SELECT COALESCE(json_agg(json_build_object(
-                'topping_id', t.topping_id,
-                'name', t.name,
-                'topping_qty', oit.topping_qty
-              )), '[]'::json)
-              FROM order_item_toppings oit
-              JOIN topping t ON t.topping_id = oit.topping_id
-              WHERE oit.order_items_id = oi.order_items_id
+    const client = await pool.connect();
+    try {
+      const customizationSchema = await resolveOrderItemCustomizationSchema(client);
+      const sizeField = customizationSchema.hasSize ? `'size', oi.size,` : `'size', 'medium',`;
+      const sugarField = customizationSchema.hasSugarLevel ? `'sugar_level', oi.sugar_level,` : `'sugar_level', '100%',`;
+      const iceField = customizationSchema.hasIceLevel ? `'ice_level', oi.ice_level,` : `'ice_level', 'less ice',`;
+
+      const result = await client.query(`
+        SELECT
+          o.order_id, o.created_at, o.payment_method, o.order_status,
+          COALESCE(json_agg(
+            json_build_object(
+              'order_items_id', oi.order_items_id,
+              'menu_item_id', oi.menu_item_id,
+              'menu_item_name', mi.name,
+              'quantity', oi.quantity,
+              'unit_price', oi.unit_price,
+              ${sizeField}
+              ${sugarField}
+              ${iceField}
+              'toppings', (
+                SELECT COALESCE(json_agg(json_build_object(
+                  'topping_id', t.topping_id,
+                  'name', t.name,
+                  'topping_qty', oit.topping_qty
+                )), '[]'::json)
+                FROM order_item_toppings oit
+                JOIN topping t ON t.topping_id = oit.topping_id
+                WHERE oit.order_items_id = oi.order_items_id
+              )
             )
-          )
-        ) FILTER (WHERE oi.order_items_id IS NOT NULL), '[]'::json) AS items
-      FROM "order" o
-      LEFT JOIN order_items oi ON oi.order_id = o.order_id
-      LEFT JOIN menu_item mi ON mi.menu_item_id = oi.menu_item_id
-      GROUP BY o.order_id, o.created_at, o.payment_method, o.order_status
-      ORDER BY o.created_at DESC
-      LIMIT 200
-    `);
-    return NextResponse.json(result.rows);
+          ) FILTER (WHERE oi.order_items_id IS NOT NULL), '[]'::json) AS items
+        FROM "order" o
+        LEFT JOIN order_items oi ON oi.order_id = o.order_id
+        LEFT JOIN menu_item mi ON mi.menu_item_id = oi.menu_item_id
+        GROUP BY o.order_id, o.created_at, o.payment_method, o.order_status
+        ORDER BY o.created_at DESC
+        LIMIT 200
+      `);
+      return NextResponse.json(result.rows);
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
+}
+
+/*
+  This query is kept above adaptive to the current database. If the order_items
+  table has size, sugar_level, and ice_level columns, customizations persist.
+  If not, orders still load with sensible default labels instead of crashing.
+*/
+async function insertOrderItem(
+  client: DbClient,
+  orderId: number,
+  item: OrderPayload['items'][number],
+  schema: OrderItemCustomizationSchema
+) {
+  const customization = normalizeDrinkCustomization(item, schema);
+  const columns = ['order_id', 'menu_item_id', 'quantity', 'unit_price'];
+  const values: Array<string | number> = [
+    orderId,
+    item.menu_item_id,
+    item.quantity,
+    item.unit_price,
+  ];
+
+  if (schema.hasSize) {
+    columns.push('size');
+    values.push(customization.size);
+  }
+
+  if (schema.hasSugarLevel) {
+    columns.push('sugar_level');
+    values.push(customization.sugar_level);
+  }
+
+  if (schema.hasIceLevel) {
+    columns.push('ice_level');
+    values.push(customization.ice_level);
+  }
+
+  const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+  const result = await client.query(
+    `INSERT INTO order_items (${columns.join(', ')})
+     VALUES (${placeholders}) RETURNING order_items_id`,
+    values
+  );
+
+  return result.rows[0].order_items_id as number;
 }
 
 export async function POST(req: NextRequest) {
@@ -143,7 +167,7 @@ export async function POST(req: NextRequest) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const recipeSchema = await resolveRecipeSchema(client);
+    const customizationSchema = await resolveOrderItemCustomizationSchema(client);
 
     // ── 1. Aggregate required ingredient quantities across all order items ──
     // Collect recipe requirements
@@ -225,12 +249,7 @@ export async function POST(req: NextRequest) {
     const order = orderResult.rows[0];
 
     for (const item of items) {
-      const itemResult = await client.query(
-        `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price)
-         VALUES ($1, $2, $3, $4) RETURNING order_items_id`,
-        [order.order_id, item.menu_item_id, item.quantity, item.unit_price]
-      );
-      const { order_items_id } = itemResult.rows[0];
+      const order_items_id = await insertOrderItem(client, order.order_id, item, customizationSchema);
 
       for (const topping of (item.toppings || [])) {
         await client.query(
