@@ -2,10 +2,10 @@
 
 /*
   URL to sent API requests to.
-  THIS NEEDS TO BE CHANGED ON DEPLOYMENT!!
+  Use the app's own API route so this works in local development and deployment
+  without hardcoding an environment-specific domain.
 */
-// const api_url = "http://localhost:3000/api/translate";
-const api_url = "https://panda33boba.vercel.app/api/translate";
+const api_url = "/api/translate";
 
 /*
   Translates one string into Spanish.
