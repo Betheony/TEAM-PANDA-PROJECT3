@@ -1,100 +1,79 @@
-
-/* This is the component that handles translations. */
-/* Right now it's just a proof-of-concept. It only takes in an input. I need to expand it to work with the entire webpage. -Ben */
-
-/* ON DEPLOYMENT, CHANGE THE URL TO THE ACTUAL WEBSITE URL!!! */
-
 "use client";
 
-// THIS NEEDS TO BE CHANGED ON DEPLOYMENT!!!
-let api_url = "http://localhost:3000/api/translate" 
+/*
+  URL to sent API requests to.
+  THIS NEEDS TO BE CHANGED ON DEPLOYMENT!!
+*/
+// const api_url = "http://localhost:3000/api/translate";
+const api_url = "https://panda33boba.vercel.app/api/translate";
 
+/*
+  Translates one string into Spanish.
 
-// Function to trigger a Google Translate API call.
-// Asynchronous so that the website can continue to run while it makes the call
-/**
- * @param {string} text_to_translate This is the text to send to Google Translate.
- */
-export async function translate_text(text_to_translate) {
+  Important design choice:
+  If translation fails, this returns the original English text instead of an
+  error message. This prevents the UI from showing "Could not translate..."
+  everywhere if the API fails.
+*/
+export async function translate_text(text_to_translate: string): Promise<string> {
+  if (!text_to_translate?.trim()) {
+    return text_to_translate;
+  }
 
-    // POST request to Google Translate.
-    // Ensure that the API key is locally set!
-    try {
+  try {
+    const res = await fetch(api_url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text_to_translate,
+        target: "es",
+      }),
+    });
 
-        const res = await fetch(api_url, {
+    const data = await res.json();
 
-            method: "POST",
-            headers: {
+    if (!res.ok) {
+      console.error("Translation failed:", data);
+      return text_to_translate;
+    }
 
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-
-                text: text_to_translate,
-                target: "es",
-            }),
-        });
-
-        // Wait for the response...
-        const data = await res.json();
-
-        // Alert if the translation failed for whatever reason.
-        // Then, return an error message.
-        if (!res.ok) {
-
-            console.error(data);
-            
-            return "Could not translate the text.";
-        }
-
-        // Log the translated text for bug testing...
-        console.log(data.translatedText ?? "");
-
-        return data.translatedText ?? "Could not translate the text.";
-    } 
-
-    // Error handling...
-    // Also return an error message.
-    catch (error) {
-
-        console.error(error);
-        return "Could not translate the text.";
-    } 
+    return data.translatedText ?? text_to_translate;
+  } catch (error) {
+    console.error("Translation request error:", error);
+    return text_to_translate;
+  }
 }
 
-// Translation function that maps the website's text to display to either the English Text or Spanish Text.
+/*
+  Translates every value inside an object.
 
-/**
- * 
- * Function that maps text in a language struct to a struct that contains the data to display.
- * Also returns the boolean "doTranslation" for keeping track of what language is being displayed (English or Spanish)
- * Requires the translation variable, the language structs, and a state updater.
- * 
- * @param doTranslation Boolean variable that decides what language to translate to.
- * @param text_English The English text, stored in a JSON-like object.
- * @param text_Spanish The Spanish text, stored in a JSON-like object.
- * @param text_updater A State Updater function. 
- * @returns doTranslation
- */
+  Example:
+  {
+    place_order: "place order",
+    cart_is_empty: "cart is empty"
+  }
 
+  becomes:
+  {
+    place_order: "realizar pedido",
+    cart_is_empty: "el carrito está vacío"
+  }
 
-/**
- * 
- * @param text_English 
- * @param text_Spanish 
- */
-export async function translate_struct_text( text_English: any, text_Spanish: any ) {
+  Why this exists:
+  Static UI text is stored in objects, so this lets us translate the whole object
+  without manually translating each field one by one.
+*/
+export async function translate_struct_text<T extends Record<string, string>>(
+  text_English: T
+): Promise<T> {
+  const translatedEntries = await Promise.all(
+    Object.entries(text_English).map(async ([key, value]) => {
+      const translated = await translate_text(value);
+      return [key, translated];
+    })
+  );
 
-    // Iterate through the various website texts and then use them to populate the Spanish struct.
-    for (const key in text_English) {
-    
-        console.log(key, text_English[key]);
-        const translated = await translate_text(text_English[key]);
-        console.log(translated);
-
-        if (translated) {
-
-            text_Spanish[key] = translated;
-        }
-    }
+  return Object.fromEntries(translatedEntries) as T;
 }
