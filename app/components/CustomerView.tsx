@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import OrderingPanel from "./OrderingPanel";
-import DarkModeToggle from "./DarkModeToggle";
 
 interface WeatherSummary {
   location: string;
@@ -143,7 +142,6 @@ export default function CustomerView() {
               </span>
             </div>
           )}
-          <DarkModeToggle />
         </div>
       </header>
 

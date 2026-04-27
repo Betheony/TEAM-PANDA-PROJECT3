@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import "./ManagerView.css";
+import AccessibilityMenu from "./AccessibilityMenu";
+import { translate_struct_text } from "./GoogleTranslateTool";
 import LoadingOverlay from "./LoadingOverlay";
-import DarkModeToggle from "./DarkModeToggle";
 
 
 interface Employee {
@@ -44,6 +45,39 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ALL_STATUSES = ["all", "pending", "preparing", "ready", "completed", "cancelled", "refunded"];
+
+const managerTextEnglish = {
+  manager_title: "Boba POS - Manager",
+  logged_in_as: "Logged in as",
+  logout: "logout",
+  total_orders: "Total Orders",
+  completed: "Completed",
+  active: "Active",
+  revenue: "Revenue",
+  orders_tab: "Orders",
+  inventory_tab: "Inventory",
+  menu_tab: "Menu",
+  employees_tab: "Employees",
+  x_report_tab: "X-Report",
+  usage_tab: "Usage",
+  order: "Order",
+  time: "Time",
+  items: "Items",
+  payment: "Payment",
+  total: "Total",
+  status: "Status",
+  actions: "Actions",
+  no_orders_found: "No orders found",
+  all: "all",
+  pending: "pending",
+  preparing: "preparing",
+  ready: "ready",
+  completed_status: "completed",
+  cancelled: "cancelled",
+  refunded: "refunded",
+  cash: "cash",
+  card: "card",
+};
 
 interface Props {
   employee: Employee;
@@ -93,6 +127,10 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [editMenuForm, setEditMenuForm] = useState({ name: "", price: "", image_url: "" });
   const [savingMenuItem, setSavingMenuItem] = useState(false);
   const [deletingMenuId, setDeletingMenuId] = useState<number | null>(null);
+  const [isSpanish, setIsSpanish] = useState(false);
+  const [managerText, setManagerText] = useState(managerTextEnglish);
+  const [managerTextSpanish, setManagerTextSpanish] =
+    useState<typeof managerTextEnglish | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -379,10 +417,44 @@ export default function ManagerView({ employee, onLogout }: Props) {
       0
     );
 
+  const statusLabel = (status: string) => {
+    const key =
+      status === "completed"
+        ? "completed_status"
+        : (status as keyof typeof managerTextEnglish);
+    return managerText[key] ?? status;
+  };
+
+  const paymentLabel = (method: string) =>
+    managerText[method as keyof typeof managerTextEnglish] ?? method;
+
+  async function loadTranslation() {
+    const shouldSwitchToSpanish = !isSpanish;
+
+    if (shouldSwitchToSpanish) {
+      let spanishText = managerTextSpanish;
+
+      if (!spanishText) {
+        spanishText = await translate_struct_text(managerTextEnglish);
+        setManagerTextSpanish(spanishText);
+      }
+
+      setManagerText(spanishText);
+      setIsSpanish(true);
+    } else {
+      setManagerText(managerTextEnglish);
+      setIsSpanish(false);
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-boba-bg flex flex-col">
       <LoadingOverlay show={loading} />
+      <AccessibilityMenu
+        isTranslationActive={isSpanish}
+        onToggleTranslation={loadTranslation}
+      />
 
       
       
@@ -396,21 +468,20 @@ export default function ManagerView({ employee, onLogout }: Props) {
             <div className="bg-black/20 p-5 rounded-lg">
 
               {/* Employee rank & details section */}
-              <h1 className="text-xl font-bold text-white-900">Boba POS — Manager</h1>
+              <h1 className="text-xl font-bold text-white-900">{managerText.manager_title}</h1>
               <p className="text-xl text-white-500">
-                Logged in as <span className="font-semibold">{employee.name}</span>
+                {managerText.logged_in_as} <span className="font-semibold">{employee.name}</span>
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <DarkModeToggle />
           <button
             onClick={onLogout}
             className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-4 py-2 rounded-full hover:border-boba-accent transition-colors"
           >
-            logout
+            {managerText.logout}
           </button>
         </div>
       </header>
@@ -420,23 +491,23 @@ export default function ManagerView({ employee, onLogout }: Props) {
       <div className="bg-boba-surface border-b border-boba-border px-6 py-4 flex justify-center gap-6">
         <div className="text-center">
           <p className="text-2xl font-semibold text-boba-primary">{orders.length}</p>
-          <p className="text-xs text-boba-muted uppercase tracking-wide">Total Orders</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">{managerText.total_orders}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-semibold text-boba-primary">
             {orders.filter((o) => o.order_status === "completed").length}
           </p>
-          <p className="text-xs text-boba-muted uppercase tracking-wide">Completed</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">{managerText.completed}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-semibold text-boba-primary">
             {orders.filter((o) => ["pending", "preparing", "ready"].includes(o.order_status)).length}
           </p>
-          <p className="text-xs text-boba-muted uppercase tracking-wide">Active</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">{managerText.active}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-semibold text-boba-accent">${totalRevenue.toFixed(2)}</p>
-          <p className="text-xs text-boba-muted uppercase tracking-wide">Revenue</p>
+          <p className="text-xs text-boba-muted uppercase tracking-wide">{managerText.revenue}</p>
         </div>
       </div>
 
@@ -457,7 +528,17 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   : "border-transparent text-boba-muted hover:text-boba-secondary"
               }`}
             >
-              {t === "orders" ? "Orders" : t === "inventory" ? "Inventory" : t === "menu" ? "Menu" : t === "employees" ? "Employees" : t === "x-report" ? "X-Report" : "Usage"}
+              {t === "orders"
+                ? managerText.orders_tab
+                : t === "inventory"
+                  ? managerText.inventory_tab
+                  : t === "menu"
+                    ? managerText.menu_tab
+                    : t === "employees"
+                      ? managerText.employees_tab
+                      : t === "x-report"
+                        ? managerText.x_report_tab
+                        : managerText.usage_tab}
             </button>
           ))}
         </div>
@@ -483,7 +564,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                       : "bg-boba-surface border border-boba-border text-boba-primary hover:border-boba-accent"
                   }`}
                 >
-                  {s}
+                  {statusLabel(s)}
                   {s !== "all" &&
                     ` (${orders.filter((o) => o.order_status === s).length})`}
                 </button>
@@ -492,7 +573,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
 
             {filteredOrders.length === 0 ? (
               <div className="text-center text-boba-muted py-20">
-                <p className="text-lg">No orders found</p>
+                <p className="text-lg">{managerText.no_orders_found}</p>
               </div>
             ) : (
 
@@ -501,13 +582,13 @@ export default function ManagerView({ employee, onLogout }: Props) {
                 <table className="w-full text-sm">
                   <thead className="bg-boba-subtle border-b border-boba-border">
                     <tr>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Order</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Time</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Items</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Payment</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Total</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Status</th>
-                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Actions</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.order}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.time}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.items}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.payment}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.total}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.status}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-boba-secondary">{managerText.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -533,7 +614,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             {order.items.map((i) => `${i.quantity}× ${i.menu_item_name}`).join(", ")}
                           </td>
                           <td className="px-4 py-3 capitalize text-boba-secondary">
-                            {order.payment_method}
+                            {paymentLabel(order.payment_method)}
                           </td>
                           <td className="px-4 py-3 font-semibold text-boba-accent">
                             ${total.toFixed(2)}
@@ -544,7 +625,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                                 STATUS_COLORS[order.order_status] ?? "bg-gray-100"
                               }`}
                             >
-                              {order.order_status}
+                              {statusLabel(order.order_status)}
                             </span>
                           </td>
 
@@ -560,7 +641,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             >
                               {["pending","preparing","ready","completed","cancelled","refunded"].map((s) => (
                                 <option key={s} value={s}>
-                                  {s}
+                                  {statusLabel(s)}
                                 </option>
                               ))}
                             </select>

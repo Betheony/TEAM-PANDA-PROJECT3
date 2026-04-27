@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { signIn } from "next-auth/react";
-import DarkModeToggle from "./DarkModeToggle";
+import AccessibilityMenu from "./AccessibilityMenu";
 import { translate_struct_text } from "./GoogleTranslateTool";
 
 const CASHIER_PIN = "123456";
@@ -193,18 +193,10 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
 
   return (
     <div className="min-h-screen bg-boba-bg flex items-center justify-center p-4 relative">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <DarkModeToggle />
-
-        {/* Translation toggle button */}
-        <button
-          type="button"
-          onClick={loadTranslation}
-          className="inline-flex items-center gap-2 rounded-full border border-boba-border bg-boba-surface px-3 py-2 text-sm text-boba-primary transition-colors hover:border-boba-accent hover:bg-boba-subtle"
-        >
-          {isSpanish ? "Translate to English" : "Traducir al español"}
-        </button>
-      </div>
+      <AccessibilityMenu
+        isTranslationActive={isSpanish}
+        onToggleTranslation={loadTranslation}
+      />
 
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import AccessibilityMenu from "./AccessibilityMenu";
 import { translate_text, translate_struct_text } from "./GoogleTranslateTool";
 
 interface MenuItem {
@@ -394,6 +395,11 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
   return (
     <div className="flex gap-4 h-full min-h-0">
+      <AccessibilityMenu
+        isTranslationActive={isSpanish}
+        onToggleTranslation={loadTranslation}
+      />
+
       <div className="flex-1 flex flex-col min-h-0 gap-3">
         <input
           ref={searchRef}
@@ -455,14 +461,6 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       </div>
 
       <div className="w-72 shrink-0 flex flex-col bg-boba-surface rounded-2xl p-4 border border-boba-border self-start sticky top-0 max-h-[calc(100vh-140px)]">
-        <button
-          type="button"
-          onClick={loadTranslation}
-          className="inline-flex items-center gap-2 rounded-full border border-boba-border bg-boba-surface px-3 py-2 text-sm text-boba-primary transition-colors hover:border-boba-accent hover:bg-boba-subtle"
-        >
-          {isSpanish ? "Translate to English" : "Traducir al español"}
-        </button>
-
         <h2 className="text-lg text-boba-primary mb-3 shrink-0">
           {orderScreenText_Static.order}
         </h2>

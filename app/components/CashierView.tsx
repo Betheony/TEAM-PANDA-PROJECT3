@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import AccessibilityMenu from "./AccessibilityMenu";
 import OrderingPanel from "./OrderingPanel";
 import LoadingOverlay from "./LoadingOverlay";
-import DarkModeToggle from "./DarkModeToggle";
+import { translate_struct_text } from "./GoogleTranslateTool";
 
 interface Employee {
   employee_id: number;
@@ -37,6 +38,28 @@ const STATUS_COLORS: Record<string, string> = {
 
 const ACTIVE_STATUSES = ["pending", "preparing", "ready"];
 
+const cashierTextEnglish = {
+  cashier: "cashier",
+  active: "active",
+  new_order: "new order",
+  queue: "queue",
+  no_active_orders: "no active orders",
+  all_caught_up: "all caught up",
+  updating: "updating...",
+  start_preparing: "start preparing",
+  mark_ready: "mark ready",
+  complete: "complete",
+  cancel: "cancel",
+  pending: "pending",
+  preparing: "preparing",
+  ready: "ready",
+  completed: "completed",
+  cancelled: "cancelled",
+  refunded: "refunded",
+  cash: "cash",
+  card: "card",
+};
+
 interface Props {
   employee: Employee;
   onLogout: () => void;
@@ -48,6 +71,10 @@ export default function CashierView({ employee, onLogout }: Props) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [isSpanish, setIsSpanish] = useState(false);
+  const [cashierText, setCashierText] = useState(cashierTextEnglish);
+  const [cashierTextSpanish, setCashierTextSpanish] =
+    useState<typeof cashierTextEnglish | null>(null);
 
   // Loads the full order list so the queue can be filtered client-side by status.
   const fetchOrders = useCallback(async () => {
@@ -100,6 +127,31 @@ export default function CashierView({ employee, onLogout }: Props) {
     ready: "complete",
   };
 
+  const statusLabel = (status: string) =>
+    cashierText[status as keyof typeof cashierTextEnglish] ?? status;
+
+  const paymentLabel = (method: string) =>
+    cashierText[method as keyof typeof cashierTextEnglish] ?? method;
+
+  async function loadTranslation() {
+    const shouldSwitchToSpanish = !isSpanish;
+
+    if (shouldSwitchToSpanish) {
+      let spanishText = cashierTextSpanish;
+
+      if (!spanishText) {
+        spanishText = await translate_struct_text(cashierTextEnglish);
+        setCashierTextSpanish(spanishText);
+      }
+
+      setCashierText(spanishText);
+      setIsSpanish(true);
+    } else {
+      setCashierText(cashierTextEnglish);
+      setIsSpanish(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-boba-bg flex flex-col">
       <LoadingOverlay show={loading && tab === "queue"} />
@@ -109,16 +161,15 @@ export default function CashierView({ employee, onLogout }: Props) {
         <div>
           <h1 className="text-xl text-boba-primary">panda tea</h1>
           <p className="text-xs text-boba-muted">
-            cashier
+            {cashierText.cashier}
           </p>
         </div>
         <div className="flex items-center gap-3">
           {activeOrders.length > 0 && (
             <span className="bg-boba-accent text-[var(--boba-accent-foreground)] text-xs px-2.5 py-1 rounded-full">
-              {activeOrders.length} active
+              {activeOrders.length} {cashierText.active}
             </span>
           )}
-          <DarkModeToggle />
           {/* <button
             onClick={onLogout}
             className="text-sm text-boba-muted hover:text-boba-primary border border-boba-border px-3 py-1.5 rounded-full hover:border-boba-accent transition-colors"
@@ -142,8 +193,8 @@ export default function CashierView({ employee, onLogout }: Props) {
               }`}
             >
               {t === "order"
-                ? "new order"
-                : `queue${activeOrders.length > 0 ? ` (${activeOrders.length})` : ""}`}
+                ? cashierText.new_order
+                : `${cashierText.queue}${activeOrders.length > 0 ? ` (${activeOrders.length})` : ""}`}
             </button>
           ))}
         </div>
@@ -151,6 +202,13 @@ export default function CashierView({ employee, onLogout }: Props) {
 
       {/* Content */}
       <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
+        {tab === "queue" && (
+          <AccessibilityMenu
+            isTranslationActive={isSpanish}
+            onToggleTranslation={loadTranslation}
+          />
+        )}
+
         {tab === "order" ? (
           // After checkout, bump refreshKey to force a fresh queue fetch and switch staff to the queue tab.
           <OrderingPanel showImages={false} onOrderPlaced={() => { setRefreshKey((k) => k + 1); setTab("queue"); }} />
@@ -158,8 +216,8 @@ export default function CashierView({ employee, onLogout }: Props) {
           <div className="h-full overflow-y-auto">
             {activeOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-boba-muted">
-                <p className="text-lg">no active orders</p>
-                <p className="text-sm mt-1 italic">all caught up</p>
+                <p className="text-lg">{cashierText.no_active_orders}</p>
+                <p className="text-sm mt-1 italic">{cashierText.all_caught_up}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -176,7 +234,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                         </p>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[order.order_status] ?? "bg-boba-subtle text-boba-muted"}`}>
-                        {order.order_status}
+                        {statusLabel(order.order_status)}
                       </span>
                     </div>
 
@@ -197,12 +255,12 @@ export default function CashierView({ employee, onLogout }: Props) {
 
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-boba-muted capitalize flex-1">
-                        {order.payment_method}
+                        {paymentLabel(order.payment_method)}
                       </span>
                       {updatingId === order.order_id ? (
                         <div className="flex items-center gap-1.5 text-boba-muted text-xs px-2">
                           <div className="w-3 h-3 border-2 border-boba-border border-t-boba-accent rounded-full animate-spin" />
-                          updating…
+                          {cashierText.updating}
                         </div>
                       ) : (
                         <>
@@ -211,14 +269,15 @@ export default function CashierView({ employee, onLogout }: Props) {
                               onClick={() => updateStatus(order.order_id, nextStatus[order.order_status])}
                               className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs px-3 py-1.5 rounded-full transition-colors"
                             >
-                              {nextLabel[order.order_status]}
+                              {cashierText[nextLabel[order.order_status] as keyof typeof cashierTextEnglish] ??
+                                nextLabel[order.order_status]}
                             </button>
                           )}
                           <button
                             onClick={() => updateStatus(order.order_id, "cancelled")}
                             className="border border-boba-border hover:border-red-300 text-boba-muted hover:text-red-400 text-xs px-2 py-1.5 rounded-full transition-colors"
                           >
-                            cancel
+                            {cashierText.cancel}
                           </button>
                         </>
                       )}
