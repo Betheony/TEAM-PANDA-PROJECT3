@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import ImageEffect from './MagnifierTool';
 import "./ManagerView.css";
 import LoadingOverlay from "./LoadingOverlay";
 import DarkModeToggle from "./DarkModeToggle";
@@ -379,6 +378,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
         sum + o.items.reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0),
       0
     );
+
 
   return (
     <div className="min-h-screen bg-boba-bg flex flex-col">
