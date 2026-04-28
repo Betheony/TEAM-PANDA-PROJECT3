@@ -34,6 +34,12 @@ type OrderItemCustomizationSchema = {
   hasIceLevel: boolean;
 };
 
+type OrderItemCustomizationSchema = {
+  sizeColumn: string | null;
+  iceLevelColumn: string | null;
+  sugarLevelColumn: string | null;
+};
+
 async function getTableColumns(client: DbClient, tableName: string) {
   const result = await client.query<{ column_name: string }>(
     `SELECT column_name
@@ -57,9 +63,22 @@ async function resolveOrderItemCustomizationSchema(
   };
 }
 
-function normalizeDrinkCustomization(
-  item: OrderPayload['items'][number],
-  schema: OrderItemCustomizationSchema
+async function resolveOrderItemCustomizationSchema(
+  client: DbClient
+): Promise<OrderItemCustomizationSchema> {
+  const orderItemColumns = await getTableColumns(client, 'order_items');
+
+  return {
+    sizeColumn: pickColumn(orderItemColumns, ['size']),
+    iceLevelColumn: pickColumn(orderItemColumns, ['ice_level']),
+    sugarLevelColumn: pickColumn(orderItemColumns, ['sugar_level']),
+  };
+}
+
+async function deductToppingInventory(
+  client: DbClient,
+  toppings: NonNullable<OrderPayload['items'][number]['toppings']>,
+  itemQuantity: number
 ) {
   return {
     size: schema.hasSize && ['medium', 'large'].includes(item.size ?? '')
@@ -96,46 +115,54 @@ export async function GET() {
     const client = await pool.connect();
     try {
       const customizationSchema = await resolveOrderItemCustomizationSchema(client);
-      const sizeField = customizationSchema.hasSize ? `'size', oi.size,` : `'size', 'medium',`;
-      const sugarField = customizationSchema.hasSugarLevel ? `'sugar_level', oi.sugar_level,` : `'sugar_level', '100%',`;
-      const iceField = customizationSchema.hasIceLevel ? `'ice_level', oi.ice_level,` : `'ice_level', 'regular ice',`;
+      const selectFields = [
+        `'order_items_id', oi.order_items_id`,
+        `'menu_item_id', oi.menu_item_id`,
+        `'menu_item_name', mi.name`,
+        `'quantity', oi.quantity`,
+        `'unit_price', oi.unit_price`,
+        `'size', ${
+          customizationSchema.sizeColumn
+            ? `oi."${customizationSchema.sizeColumn}"`
+            : `'medium'`
+        }`,
+        `'ice_level', ${
+          customizationSchema.iceLevelColumn
+            ? `oi."${customizationSchema.iceLevelColumn}"`
+            : `'100%'`
+        }`,
+        `'sugar_level', ${
+          customizationSchema.sugarLevelColumn
+            ? `oi."${customizationSchema.sugarLevelColumn}"`
+            : `'100%'`
+        }`,
+        `'toppings', (
+              SELECT COALESCE(json_agg(json_build_object(
+                'topping_id', t.topping_id,
+                'name', t.name,
+                'topping_qty', oit.topping_qty
+              )), '[]'::json)
+              FROM order_item_toppings oit
+              JOIN topping t ON t.topping_id = oit.topping_id
+              WHERE oit.order_items_id = oi.order_items_id
+            )`,
+      ];
 
       const result = await client.query(`
-        SELECT
-          o.order_id,
-          to_char((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1, 'FMMM/FMDD/YYYY, FMHH12:MI:SS AM') AS created_at,
-          to_char((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1, 'FMHH12:MI AM') AS created_time,
-          o.payment_method,
-          o.order_status,
-          COALESCE(json_agg(
-            json_build_object(
-              'order_items_id', oi.order_items_id,
-              'menu_item_id', oi.menu_item_id,
-              'menu_item_name', mi.name,
-              'quantity', oi.quantity,
-              'unit_price', oi.unit_price,
-              ${sizeField}
-              ${sugarField}
-              ${iceField}
-              'toppings', (
-                SELECT COALESCE(json_agg(json_build_object(
-                  'topping_id', t.topping_id,
-                  'name', t.name,
-                  'topping_qty', oit.topping_qty
-                )), '[]'::json)
-                FROM order_item_toppings oit
-                JOIN topping t ON t.topping_id = oit.topping_id
-                WHERE oit.order_items_id = oi.order_items_id
-              )
-            )
-          ) FILTER (WHERE oi.order_items_id IS NOT NULL), '[]'::json) AS items
-        FROM "order" o
-        LEFT JOIN order_items oi ON oi.order_id = o.order_id
-        LEFT JOIN menu_item mi ON mi.menu_item_id = oi.menu_item_id
-        GROUP BY o.order_id, o.created_at, o.payment_method, o.order_status
-        ORDER BY o.created_at DESC
-        LIMIT 200
-      `, [ORDER_TIME_ZONE]);
+      SELECT
+        o.order_id, o.created_at, o.payment_method, o.order_status,
+        COALESCE(json_agg(
+          json_build_object(
+            ${selectFields.join(',\n            ')}
+          )
+        ) FILTER (WHERE oi.order_items_id IS NOT NULL), '[]'::json) AS items
+      FROM "order" o
+      LEFT JOIN order_items oi ON oi.order_id = o.order_id
+      LEFT JOIN menu_item mi ON mi.menu_item_id = oi.menu_item_id
+      GROUP BY o.order_id, o.created_at, o.payment_method, o.order_status
+      ORDER BY o.created_at DESC
+      LIMIT 200
+    `);
       return NextResponse.json(result.rows);
     } finally {
       client.release();
@@ -196,6 +223,7 @@ export async function POST(req: NextRequest) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const recipeSchema = await resolveRecipeSchema(client);
     const customizationSchema = await resolveOrderItemCustomizationSchema(client);
 
     // ── 1. Aggregate required ingredient quantities across all order items ──
@@ -289,7 +317,37 @@ export async function POST(req: NextRequest) {
     const order = orderResult.rows[0];
 
     for (const item of items) {
-      const order_items_id = await insertOrderItem(client, order.order_id, item, customizationSchema);
+      const insertColumns = ['order_id', 'menu_item_id', 'quantity', 'unit_price'];
+      const insertValues: Array<string | number> = [
+        order.order_id,
+        item.menu_item_id,
+        item.quantity,
+        item.unit_price,
+      ];
+
+      if (customizationSchema.iceLevelColumn) {
+        insertColumns.push(customizationSchema.iceLevelColumn);
+        insertValues.push(item.ice_level ?? '100%');
+      }
+
+      if (customizationSchema.sizeColumn) {
+        insertColumns.push(customizationSchema.sizeColumn);
+        insertValues.push(item.size ?? 'medium');
+      }
+
+      if (customizationSchema.sugarLevelColumn) {
+        insertColumns.push(customizationSchema.sugarLevelColumn);
+        insertValues.push(item.sugar_level ?? '100%');
+      }
+
+      const placeholders = insertColumns.map((_, index) => `$${index + 1}`).join(', ');
+
+      const itemResult = await client.query(
+        `INSERT INTO order_items (${insertColumns.join(', ')})
+         VALUES (${placeholders}) RETURNING order_items_id`,
+        insertValues
+      );
+      const { order_items_id } = itemResult.rows[0];
 
       for (const topping of (item.toppings || [])) {
         await client.query(

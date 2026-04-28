@@ -18,8 +18,8 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   size?: string;
-  sugar_level?: string;
   ice_level?: string;
+  sugar_level?: string;
   toppings: { name: string }[];
 }
 
@@ -648,19 +648,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             {order.created_at}
                           </td>
                           <td className="px-4 py-3 text-boba-primary max-w-xs">
-                            <div className="space-y-1">
-                              {order.items.map((i) => (
-                                <div key={i.order_items_id}>
-                                  <p>{i.quantity}× {i.menu_item_name}</p>
-                                  <p className="text-xs text-boba-muted">
-                                    {customizationLabel(i)}
-                                    {i.toppings.length > 0
-                                      ? ` + ${i.toppings.map((t) => t.name).join(", ")}`
-                                      : ""}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
+                            {order.items
+                              .map(
+                                (i) =>
+                                  `${i.quantity}× ${i.menu_item_name} (size ${i.size ?? "medium"}, ice ${i.ice_level ?? "100%"}, sugar ${i.sugar_level ?? "100%"})`
+                              )
+                              .join(", ")}
                           </td>
                           <td className="px-4 py-3 capitalize text-boba-secondary">
                             {paymentLabel(order.payment_method)}

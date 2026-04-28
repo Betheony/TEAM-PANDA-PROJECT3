@@ -17,8 +17,8 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   size?: string;
-  sugar_level?: string;
   ice_level?: string;
+  sugar_level?: string;
   toppings: { name: string; topping_qty: number }[];
 }
 
@@ -259,6 +259,9 @@ export default function CashierView({ employee, onLogout }: Props) {
                               + {item.toppings.map((t) => t.name).join(", ")}
                             </p>
                           )}
+                          <p className="text-xs text-boba-muted ml-4">
+                            Size: {item.size ?? "medium"} • Ice: {item.ice_level ?? "100%"} • Sugar: {item.sugar_level ?? "100%"}
+                          </p>
                         </div>
                       ))}
                     </div>
