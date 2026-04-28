@@ -16,6 +16,7 @@ interface OrderItem {
   menu_item_name: string;
   quantity: number;
   unit_price: number;
+  size?: string;
   ice_level?: string;
   sugar_level?: string;
   toppings: { name: string; topping_qty: number }[];
@@ -252,7 +253,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                             </p>
                           )}
                           <p className="text-xs text-boba-muted ml-4">
-                            Ice: {item.ice_level ?? "100%"} • Sugar: {item.sugar_level ?? "100%"}
+                            Size: {item.size ?? "medium"} • Ice: {item.ice_level ?? "100%"} • Sugar: {item.sugar_level ?? "100%"}
                           </p>
                         </div>
                       ))}

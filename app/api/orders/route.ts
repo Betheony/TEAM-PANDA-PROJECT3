@@ -10,6 +10,7 @@ type OrderPayload = {
     menu_item_id: number;
     quantity: number;
     unit_price: number;
+    size?: string;
     ice_level?: string;
     sugar_level?: string;
     toppings?: Array<{
@@ -26,6 +27,7 @@ type RecipeSchema = {
 } | null;
 
 type OrderItemCustomizationSchema = {
+  sizeColumn: string | null;
   iceLevelColumn: string | null;
   sugarLevelColumn: string | null;
 };
@@ -72,6 +74,7 @@ async function resolveOrderItemCustomizationSchema(
   const orderItemColumns = await getTableColumns(client, 'order_items');
 
   return {
+    sizeColumn: pickColumn(orderItemColumns, ['size']),
     iceLevelColumn: pickColumn(orderItemColumns, ['ice_level']),
     sugarLevelColumn: pickColumn(orderItemColumns, ['sugar_level']),
   };
@@ -129,6 +132,11 @@ export async function GET() {
         `'menu_item_name', mi.name`,
         `'quantity', oi.quantity`,
         `'unit_price', oi.unit_price`,
+        `'size', ${
+          customizationSchema.sizeColumn
+            ? `oi."${customizationSchema.sizeColumn}"`
+            : `'medium'`
+        }`,
         `'ice_level', ${
           customizationSchema.iceLevelColumn
             ? `oi."${customizationSchema.iceLevelColumn}"`
@@ -275,6 +283,11 @@ export async function POST(req: NextRequest) {
       if (customizationSchema.iceLevelColumn) {
         insertColumns.push(customizationSchema.iceLevelColumn);
         insertValues.push(item.ice_level ?? '100%');
+      }
+
+      if (customizationSchema.sizeColumn) {
+        insertColumns.push(customizationSchema.sizeColumn);
+        insertValues.push(item.size ?? 'medium');
       }
 
       if (customizationSchema.sugarLevelColumn) {

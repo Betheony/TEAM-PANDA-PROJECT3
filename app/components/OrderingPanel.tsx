@@ -51,6 +51,7 @@ interface CartItem {
   price: number;
   quantity: number;
   toppings: CartTopping[];
+  size: string;
   ice_level: string;
   sugar_level: string;
 }
@@ -83,6 +84,10 @@ const orderScreenText_English_Static = {
   order_placed: "Order placed!",
   clear_cart: "clear cart",
   toppings: "toppings",
+  size: "size",
+  small: "small",
+  medium: "medium",
+  large: "large",
   ice_level: "ice level",
   sugar_level: "sugar level",
   hot: "hot",
@@ -96,6 +101,7 @@ const orderScreenText_English_Static = {
 };
 
 const CUSTOMIZATION_LEVELS = ["100%", "75%", "50%", "25%", "0%"] as const;
+const DRINK_SIZES = ["small", "medium", "large"] as const;
 const CATEGORY_ORDER: MenuCategory[] = ["hot", "cold", "special"];
 const HOT_KEYWORDS = ["hot", "chai", "matcha latte", "cocoa", "coffee"];
 const SPECIAL_KEYWORDS = [
@@ -150,6 +156,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
+  const [drinkSize, setDrinkSize] = useState<(typeof DRINK_SIZES)[number]>("medium");
   const [iceLevel, setIceLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
   const [sugarLevel, setSugarLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
   const [itemQty, setItemQty] = useState(1);
@@ -318,6 +325,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
     setSelectedToppings([]);
+    setDrinkSize("medium");
     setIceLevel("100%");
     setSugarLevel("100%");
     setItemQty(1);
@@ -350,7 +358,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
     const key = `${selectedItem.menu_item_id}-${[...selectedToppings]
       .sort()
-      .join(",")}-${iceLevel}-${sugarLevel}`;
+      .join(",")}-${drinkSize}-${iceLevel}-${sugarLevel}`;
 
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
@@ -371,6 +379,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           price: Number(selectedItem.price),
           quantity: itemQty,
           toppings: cartToppings,
+          size: drinkSize,
           ice_level: iceLevel,
           sugar_level: sugarLevel,
         },
@@ -414,6 +423,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
             menu_item_id: c.menu_item_id,
             quantity: c.quantity,
             unit_price: c.price,
+            size: c.size,
             ice_level: c.ice_level,
             sugar_level: c.sugar_level,
             toppings: c.toppings.map((t) => ({
@@ -634,7 +644,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       )}
 
                       <p className="text-xs text-boba-muted truncate">
-                        {orderScreenText_Static.ice_level}: {item.ice_level} • {orderScreenText_Static.sugar_level}: {item.sugar_level}
+                        {orderScreenText_Static.size}: {item.size} • {orderScreenText_Static.ice_level}: {item.ice_level} • {orderScreenText_Static.sugar_level}: {item.sugar_level}
                       </p>
                     </div>
 
@@ -773,6 +783,28 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                 </div>
               </div>
             )}
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.size}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {DRINK_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setDrinkSize(size)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      drinkSize === size
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {orderScreenText_Static[size]}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="mb-4">
               <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
