@@ -50,9 +50,6 @@ interface CartItem {
   translated_name?: string;
   price: number;
   quantity: number;
-  size: DrinkSize;
-  sugar_level: SugarLevel;
-  ice_level: IceLevel;
   toppings: CartTopping[];
   size: string;
   ice_level: string;
@@ -172,7 +169,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<"all" | MenuCategory>("all");
   const searchRef = useRef<HTMLInputElement>(null);
   const menuScrollRef = useRef<HTMLDivElement>(null);
-  const sectionRefs = useRef<Record<MenuCategory, HTMLDivElement | null>>({
+  const sectionRefs = useRef<Record<MenuCategory, HTMLElement | null>>({
     hot: null,
     cold: null,
     special: null,
@@ -359,9 +356,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
         topping_qty: t.qty_needed,
       }));
 
-    const key = `${selectedItem.menu_item_id}-${selectedSize}-${selectedSugarLevel}-${selectedIceLevel}-${[...selectedToppings]
+    const key = `${selectedItem.menu_item_id}-${drinkSize}-${iceLevel}-${sugarLevel}-${[...selectedToppings]
       .sort()
-      .join(",")}-${drinkSize}-${iceLevel}-${sugarLevel}`;
+      .join(",")}`;
 
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
@@ -381,9 +378,6 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           translated_name: selectedItem.translated_name,
           price: Number(selectedItem.price),
           quantity: itemQty,
-          size: selectedSize,
-          sugar_level: selectedSugarLevel,
-          ice_level: selectedIceLevel,
           toppings: cartToppings,
           size: drinkSize,
           ice_level: iceLevel,
@@ -768,71 +762,6 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
               >
                 ✕
               </button>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div>
-                <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
-                  {orderScreenText_Static.size}
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {SIZE_OPTIONS.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-3 py-2 rounded-lg text-sm text-left capitalize transition-colors ${
-                        selectedSize === size
-                          ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
-                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
-                  {orderScreenText_Static.sugar_level}
-                </p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {SUGAR_OPTIONS.map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setSelectedSugarLevel(level)}
-                      className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                        selectedSugarLevel === level
-                          ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
-                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
-                  {orderScreenText_Static.ice_level}
-                </p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {ICE_OPTIONS.map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setSelectedIceLevel(level)}
-                      className={`px-3 py-2 rounded-lg text-sm text-left capitalize transition-colors ${
-                        selectedIceLevel === level
-                          ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
-                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {toppings.length > 0 && (
