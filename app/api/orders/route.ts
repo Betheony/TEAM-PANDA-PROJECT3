@@ -22,6 +22,12 @@ type OrderPayload = {
   }>;
 };
 
+type IngredientNeed = {
+  name: string;
+  qty: number;
+  contributors: Map<string, number>;
+};
+
 type OrderItemCustomizationSchema = {
   hasSize: boolean;
   hasSugarLevel: boolean;
@@ -66,6 +72,23 @@ function normalizeDrinkCustomization(
       ? item.ice_level
       : 'regular ice',
   };
+}
+
+function addIngredientNeed(
+  needed: Map<number, IngredientNeed>,
+  ingredientId: number,
+  ingredientName: string,
+  qty: number,
+  contributorName: string
+) {
+  const prev = needed.get(ingredientId);
+  const contributors = prev?.contributors ?? new Map<string, number>();
+  contributors.set(contributorName, (contributors.get(contributorName) ?? 0) + qty);
+  needed.set(ingredientId, {
+    name: ingredientName,
+    qty: (prev?.qty ?? 0) + qty,
+    contributors,
+  });
 }
 
 export async function GET() {
@@ -177,9 +200,15 @@ export async function POST(req: NextRequest) {
 
     // ── 1. Aggregate required ingredient quantities across all order items ──
     // Collect recipe requirements
-    const needed = new Map<number, { name: string; qty: number }>();
+    const needed = new Map<number, IngredientNeed>();
 
     for (const item of items) {
+      const menuItemRows = await client.query(
+        `SELECT name FROM menu_item WHERE menu_item_id = $1`,
+        [item.menu_item_id]
+      );
+      const menuItemName = menuItemRows.rows[0]?.name ?? `Menu item #${item.menu_item_id}`;
+
       const recipeRows = await client.query(
         `SELECT r.ingredient_id, r.qty_needed, i.name
          FROM recipe r
@@ -188,31 +217,35 @@ export async function POST(req: NextRequest) {
         [item.menu_item_id]
       );
       for (const row of recipeRows.rows) {
-        const total = (row.qty_needed as number) * item.quantity;
-        const prev = needed.get(row.ingredient_id);
-        needed.set(row.ingredient_id, {
-          name: row.name,
-          qty: (prev?.qty ?? 0) + total,
-        });
+        const total = Number(row.qty_needed) * item.quantity;
+        addIngredientNeed(
+          needed,
+          row.ingredient_id,
+          row.name,
+          total,
+          menuItemName
+        );
       }
 
       // Also collect topping requirements
       for (const topping of (item.toppings || [])) {
         const toppingRow = await client.query(
-          `SELECT t.ingredient_id, i.name
+          `SELECT t.name AS topping_name, t.ingredient_id, i.name AS ingredient_name
            FROM topping t
            JOIN ingredient i ON i.ingredient_id = t.ingredient_id
            WHERE t.topping_id = $1`,
           [topping.topping_id]
         );
         if (toppingRow.rows.length > 0) {
-          const { ingredient_id, name } = toppingRow.rows[0];
+          const { ingredient_id, ingredient_name, topping_name } = toppingRow.rows[0];
           const total = topping.topping_qty * item.quantity;
-          const prev = needed.get(ingredient_id);
-          needed.set(ingredient_id, {
-            name,
-            qty: (prev?.qty ?? 0) + total,
-          });
+          addIngredientNeed(
+            needed,
+            ingredient_id,
+            ingredient_name,
+            total,
+            `${menuItemName} with ${topping_name}`
+          );
         }
       }
     }
@@ -232,8 +265,9 @@ export async function POST(req: NextRequest) {
       for (const row of stockRows.rows) {
         const required = needed.get(row.ingredient_id)!;
         if (row.qty_in_stock < required.qty) {
+          const affectedDrinks = Array.from(required.contributors.keys()).join(', ');
           insufficient.push(
-            `${required.name} (need ${required.qty}, have ${row.qty_in_stock})`
+            `${required.name} for ${affectedDrinks} (need ${required.qty}, have ${row.qty_in_stock})`
           );
         }
       }
