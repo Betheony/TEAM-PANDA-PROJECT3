@@ -565,11 +565,11 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       <button
                         key={item.menu_item_id}
                         onClick={() => openModal(item)}
-                        className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95"
+                        className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95 min-h-[24rem] flex flex-col justify-center"
                       >
                         {showImages &&
                           (item.image_url?.trim() ? (
-                            <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
+                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
                               <img
                                 src={item.image_url}
                                 alt={displayMenuItemName(item)}
@@ -577,7 +577,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
+                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
                               🧋
                             </div>
                           ))}
