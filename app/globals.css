@@ -15,6 +15,12 @@
   --boba-accent: #c9a69c;
   --boba-accent-hover: #b89689;
   --boba-accent-foreground: #ffffff;
+
+  --menu-card-hover: var(--boba-subtle);
+  --menu-card-media: #ffffff;
+  --menu-card-media-hover: var(--boba-subtle);
+  --menu-card-text-hover: var(--boba-primary);
+  --menu-card-price-hover: var(--boba-accent);
 }
 
 :root[data-theme="contrast"] {
@@ -31,6 +37,12 @@
   --boba-accent: #ffffff;
   --boba-accent-hover: #d9d9d9;
   --boba-accent-foreground: #000000;
+
+  --menu-card-hover: #ffffff;
+  --menu-card-media: #000000;
+  --menu-card-media-hover: #ffffff;
+  --menu-card-text-hover: #000000;
+  --menu-card-price-hover: #000000;
 }
 
 @theme inline {

@@ -575,11 +575,11 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       <button
                         key={item.menu_item_id}
                         onClick={() => openModal(item)}
-                        className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95 min-h-[24rem] flex flex-col justify-center"
+                        className="group bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-[var(--menu-card-hover)] rounded-xl p-3 text-left transition-colors active:scale-95 min-h-[24rem] flex flex-col justify-center"
                       >
                         {showImages &&
                           (item.image_url?.trim() ? (
-                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
+                            <div className="w-full h-56 rounded-lg mb-3 bg-[var(--menu-card-media)] group-hover:bg-[var(--menu-card-media-hover)] overflow-hidden transition-colors">
                               <img
                                 src={item.image_url}
                                 alt={displayMenuItemName(item)}
@@ -587,16 +587,16 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
+                            <div className="w-full h-56 rounded-lg mb-3 bg-[var(--menu-card-media)] group-hover:bg-[var(--menu-card-media-hover)] flex items-center justify-center text-4xl transition-colors">
                               🧋
                             </div>
                           ))}
 
-                        <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
+                        <p className="text-boba-primary group-hover:text-[var(--menu-card-text-hover)] text-sm font-medium leading-tight line-clamp-2 mb-1 transition-colors">
                           {displayMenuItemName(item)}
                         </p>
 
-                        <p className="text-boba-accent text-sm font-semibold">
+                        <p className="text-boba-accent group-hover:text-[var(--menu-card-price-hover)] text-sm font-semibold transition-colors">
                           ${Number(item.price).toFixed(2)}
                         </p>
                       </button>
