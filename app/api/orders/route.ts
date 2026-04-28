@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PoolClient } from 'pg';
 import pool from '@/lib/db';
 
+const ORDER_TIME_ZONE = 'America/Chicago';
+
 type DbClient = PoolClient;
 
 type OrderPayload = {
@@ -77,7 +79,11 @@ export async function GET() {
 
       const result = await client.query(`
         SELECT
-          o.order_id, o.created_at, o.payment_method, o.order_status,
+          o.order_id,
+          to_char((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1, 'FMMM/FMDD/YYYY, FMHH12:MI:SS AM') AS created_at,
+          to_char((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1, 'FMHH12:MI AM') AS created_time,
+          o.payment_method,
+          o.order_status,
           COALESCE(json_agg(
             json_build_object(
               'order_items_id', oi.order_items_id,
@@ -106,7 +112,7 @@ export async function GET() {
         GROUP BY o.order_id, o.created_at, o.payment_method, o.order_status
         ORDER BY o.created_at DESC
         LIMIT 200
-      `);
+      `, [ORDER_TIME_ZONE]);
       return NextResponse.json(result.rows);
     } finally {
       client.release();
