@@ -1,7 +1,7 @@
 INSERT INTO ingredient (name, qty_in_stock, target_qty)
-SELECT 'Jelly', 100, 100
+SELECT 'Coffee Jelly', 100, 100
 WHERE NOT EXISTS (
-  SELECT 1 FROM ingredient WHERE LOWER(name) = LOWER('Jelly')
+  SELECT 1 FROM ingredient WHERE LOWER(name) = LOWER('Coffee Jelly')
 );
 
 INSERT INTO ingredient (name, qty_in_stock, target_qty)
@@ -22,34 +22,49 @@ WHERE NOT EXISTS (
   SELECT 1 FROM ingredient WHERE LOWER(name) = LOWER('Strawberry Popping Boba')
 );
 
-INSERT INTO topping (name, ingredient_id, qty_needed)
-SELECT 'Jelly', i.ingredient_id, 1
-FROM ingredient i
-WHERE LOWER(i.name) = LOWER('Jelly')
-  AND NOT EXISTS (
-    SELECT 1 FROM topping t WHERE LOWER(t.name) = LOWER('Jelly')
-  );
+INSERT INTO ingredient (name, qty_in_stock, target_qty)
+SELECT 'Coconut Jelly', 100, 100
+WHERE NOT EXISTS (
+  SELECT 1 FROM ingredient WHERE LOWER(name) = LOWER('Coconut Jelly')
+);
 
-INSERT INTO topping (name, ingredient_id, qty_needed)
-SELECT 'Boba', i.ingredient_id, 1
-FROM ingredient i
-WHERE LOWER(i.name) = LOWER('Boba')
-  AND NOT EXISTS (
-    SELECT 1 FROM topping t WHERE LOWER(t.name) = LOWER('Boba')
-  );
+INSERT INTO ingredient (name, qty_in_stock, target_qty)
+SELECT 'Sago', 100, 100
+WHERE NOT EXISTS (
+  SELECT 1 FROM ingredient WHERE LOWER(name) = LOWER('Sago')
+);
 
-INSERT INTO topping (name, ingredient_id, qty_needed)
-SELECT 'Mango Popping Boba', i.ingredient_id, 1
-FROM ingredient i
-WHERE LOWER(i.name) = LOWER('Mango Popping Boba')
-  AND NOT EXISTS (
-    SELECT 1 FROM topping t WHERE LOWER(t.name) = LOWER('Mango Popping Boba')
-  );
-
-INSERT INTO topping (name, ingredient_id, qty_needed)
-SELECT 'Strawberry Popping Boba', i.ingredient_id, 1
-FROM ingredient i
-WHERE LOWER(i.name) = LOWER('Strawberry Popping Boba')
-  AND NOT EXISTS (
-    SELECT 1 FROM topping t WHERE LOWER(t.name) = LOWER('Strawberry Popping Boba')
-  );
+WITH topping_seed(name) AS (
+  VALUES
+    ('Coffee Jelly'),
+    ('Boba'),
+    ('Mango Popping Boba'),
+    ('Strawberry Popping Boba'),
+    ('Coconut Jelly'),
+    ('Sago')
+),
+missing_toppings AS (
+  SELECT
+    seed.name,
+    i.ingredient_id,
+    ROW_NUMBER() OVER (ORDER BY seed.name) AS row_num
+  FROM topping_seed seed
+  JOIN ingredient i ON LOWER(i.name) = LOWER(seed.name)
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM topping t
+    WHERE LOWER(t.name) = LOWER(seed.name)
+  )
+),
+current_max AS (
+  SELECT COALESCE(MAX(topping_id), 0) AS max_topping_id
+  FROM topping
+)
+INSERT INTO topping (topping_id, qty_needed, ingredient_id, name)
+SELECT
+  current_max.max_topping_id + missing_toppings.row_num,
+  1,
+  missing_toppings.ingredient_id,
+  missing_toppings.name
+FROM missing_toppings
+CROSS JOIN current_max;
