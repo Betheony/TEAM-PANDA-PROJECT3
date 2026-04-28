@@ -39,6 +39,20 @@ interface Ingredient {
   target_qty: number;
 }
 
+interface RecipeIngredient {
+  ingredient_id: number;
+  ingredient_name: string;
+  qty_needed: number;
+}
+
+interface MenuItem {
+  menu_item_id: number;
+  name: string;
+  price: number;
+  image_url: string | null;
+  recipe?: RecipeIngredient[];
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700 border border-yellow-200",
   preparing: "bg-blue-50 text-blue-700 border border-blue-200",
@@ -94,7 +108,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [tab, setTab] = useState<"orders" | "inventory" | "menu" | "employees" | "x-report" | "usage">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [menuItems, setMenuItems] = useState<{ menu_item_id: number; name: string; price: number; image_url: string | null }[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [employees, setEmployees] = useState<{ employee_id: number; name: string; role: string }[]>([]);
   const [empForm, setEmpForm] = useState({ name: "", role: "cashier", pin: "" });
   const [addingEmp, setAddingEmp] = useState(false);
@@ -127,8 +141,9 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [menuForm, setMenuForm] = useState({ name: "", price: "", image_url: "" });
   const [menuRecipe, setMenuRecipe] = useState<Record<number, string>>({});
   const [addingMenuItem, setAddingMenuItem] = useState(false);
-  const [editingMenuItem, setEditingMenuItem] = useState<{ menu_item_id: number; name: string; price: number; image_url: string | null } | null>(null);
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [editMenuForm, setEditMenuForm] = useState({ name: "", price: "", image_url: "" });
+  const [editMenuRecipe, setEditMenuRecipe] = useState<Record<number, string>>({});
   const [savingMenuItem, setSavingMenuItem] = useState(false);
   const [deletingMenuId, setDeletingMenuId] = useState<number | null>(null);
   const [isSpanish, setIsSpanish] = useState(false);
@@ -163,7 +178,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
       const res = await fetch("/api/menu");
       if (!res.ok) throw new Error(`menu fetch failed: ${res.status}`);
       const data = await res.json();
-      setMenuItems(Array.isArray(data.menuItems) ? data.menuItems : []);
+      setMenuItems(
+        Array.isArray(data.menuItems)
+          ? data.menuItems.map((item: MenuItem) => ({
+              ...item,
+              recipe: Array.isArray(item.recipe) ? item.recipe : [],
+            }))
+          : []
+      );
     } catch (err) {
       console.error(err);
     }
@@ -341,6 +363,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
     setSavingMenuItem(true);
     setError("");
     try {
+      const recipe = Object.entries(editMenuRecipe)
+        .filter(([, qty]) => Number(qty) > 0)
+        .map(([ingredient_id, qty_needed]) => ({
+          ingredient_id: Number(ingredient_id),
+          qty_needed: Number(qty_needed),
+        }));
       const res = await fetch(`/api/menu/${editingMenuItem.menu_item_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -348,10 +376,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
           name: editMenuForm.name,
           price: Number(editMenuForm.price),
           image_url: editMenuForm.image_url || null,
+          recipe,
         }),
       });
       if (!res.ok) throw new Error("Failed to update menu item");
       setEditingMenuItem(null);
+      setEditMenuRecipe({});
       fetchMenuItems();
     } catch {
       setError("Failed to update menu item");
@@ -878,6 +908,14 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             onClick={() => {
                               setEditingMenuItem(item);
                               setEditMenuForm({ name: item.name, price: String(item.price), image_url: item.image_url ?? "" });
+                              setEditMenuRecipe(
+                                Object.fromEntries(
+                                  (item.recipe ?? []).map((row) => [
+                                    row.ingredient_id,
+                                    String(row.qty_needed),
+                                  ])
+                                )
+                              );
                               setError("");
                             }}
                             className="bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
@@ -903,12 +941,25 @@ export default function ManagerView({ employee, onLogout }: Props) {
             {editingMenuItem && (
               <div
                 className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                onClick={(e) => e.target === e.currentTarget && setEditingMenuItem(null)}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setEditingMenuItem(null);
+                    setEditMenuRecipe({});
+                  }
+                }}
               >
-                <div className="bg-boba-surface rounded-2xl border border-boba-border w-full max-w-sm p-6">
+                <div className="bg-boba-surface rounded-2xl border border-boba-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
                   <div className="flex items-center justify-between mb-5">
                     <h2 className="text-lg font-semibold text-boba-primary">Edit Menu Item</h2>
-                    <button onClick={() => setEditingMenuItem(null)} className="text-boba-muted hover:text-boba-primary text-xl leading-none">✕</button>
+                    <button
+                      onClick={() => {
+                        setEditingMenuItem(null);
+                        setEditMenuRecipe({});
+                      }}
+                      className="text-boba-muted hover:text-boba-primary text-xl leading-none"
+                    >
+                      ✕
+                    </button>
                   </div>
 
                   {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
@@ -945,9 +996,31 @@ export default function ManagerView({ employee, onLogout }: Props) {
                     </div>
                   </div>
 
+                  <div className="mb-5">
+                    <p className="text-xs text-boba-secondary font-medium mb-2">Recipe — qty needed per order <span className="font-normal text-boba-muted">(leave 0 to skip)</span></p>
+                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                      {ingredients.map((ing) => (
+                        <div key={ing.ingredient_id} className="flex items-center gap-3">
+                          <span className="flex-1 text-sm text-boba-primary">{ing.name}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={editMenuRecipe[ing.ingredient_id] ?? ""}
+                            onChange={(e) => setEditMenuRecipe((p) => ({ ...p, [ing.ingredient_id]: e.target.value }))}
+                            className="w-20 border border-boba-border rounded-lg px-2 py-1 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex gap-3">
                     <button
-                      onClick={() => setEditingMenuItem(null)}
+                      onClick={() => {
+                        setEditingMenuItem(null);
+                        setEditMenuRecipe({});
+                      }}
                       className="flex-1 border border-boba-border hover:border-boba-accent text-boba-muted py-2 rounded-full text-sm transition-colors"
                     >
                       Cancel
