@@ -300,7 +300,7 @@ export default function LoginScreen({ onCustomerEntry, onCashierLogin }: Props) 
           )}
 
           <button
-            onClick={() => signIn("google")}
+            onClick={() => signIn("google", undefined, { prompt: "select_account" })}
             className="w-full border border-boba-border hover:border-boba-accent text-boba-secondary hover:text-boba-primary py-4 rounded-2xl text-base transition-colors"
           >
             {loginScreenText.manager_login}

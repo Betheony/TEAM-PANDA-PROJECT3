@@ -25,6 +25,7 @@ interface OrderItem {
 interface Order {
   order_id: number;
   created_at: string;
+  created_time?: string;
   payment_method: string;
   order_status: string;
   items: OrderItem[];
@@ -136,6 +137,9 @@ export default function CashierView({ employee, onLogout }: Props) {
   const paymentLabel = (method: string) =>
     cashierText[method as keyof typeof cashierTextEnglish] ?? method;
 
+  const customizationLabel = (item: OrderItem) =>
+    `${item.size ?? "medium"}, ${item.sugar_level ?? "100%"} sugar, ${item.ice_level ?? "regular ice"}`;
+
   async function loadTranslation() {
     const shouldSwitchToSpanish = !isSpanish;
 
@@ -233,7 +237,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                       <div>
                         <p className="text-boba-primary font-medium">#{order.order_id}</p>
                         <p className="text-xs text-boba-muted">
-                          {new Date(order.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {order.created_time ?? order.created_at}
                         </p>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[order.order_status] ?? "bg-boba-subtle text-boba-muted"}`}>
@@ -247,6 +251,9 @@ export default function CashierView({ employee, onLogout }: Props) {
                           <span className="text-boba-primary">
                             {item.quantity}× {item.menu_item_name}
                           </span>
+                          <p className="text-xs text-boba-muted ml-4">
+                            {customizationLabel(item)}
+                          </p>
                           {item.toppings.length > 0 && (
                             <p className="text-xs text-boba-muted ml-4">
                               + {item.toppings.map((t) => t.name).join(", ")}

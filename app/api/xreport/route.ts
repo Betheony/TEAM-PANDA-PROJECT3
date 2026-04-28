@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const REPORT_TIME_ZONE = 'America/Chicago';
+
 export async function GET() {
   try {
     const [summary, byStatus, byPayment, hourly, topItems] = await Promise.all([
@@ -16,21 +21,19 @@ export async function GET() {
                  COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS item_total
           FROM "order" o
           LEFT JOIN order_items oi ON oi.order_id = o.order_id
-          WHERE o.created_at >= CURRENT_DATE
-            AND o.created_at <  CURRENT_DATE + INTERVAL '1 day'
+          WHERE ((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::date = (NOW() AT TIME ZONE $1)::date
           GROUP BY o.order_id, o.order_status
         ) sub
-      `),
+      `, [REPORT_TIME_ZONE]),
 
       // Count by status
       pool.query(`
         SELECT order_status AS status, COUNT(*)::int AS count
         FROM "order"
-        WHERE created_at >= CURRENT_DATE
-          AND created_at <  CURRENT_DATE + INTERVAL '1 day'
+        WHERE ((created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::date = (NOW() AT TIME ZONE $1)::date
         GROUP BY order_status
         ORDER BY count DESC
-      `),
+      `, [REPORT_TIME_ZONE]),
 
       // Revenue & count by payment method (completed only)
       pool.query(`
@@ -39,26 +42,24 @@ export async function GET() {
                COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS revenue
         FROM "order" o
         LEFT JOIN order_items oi ON oi.order_id = o.order_id
-        WHERE o.created_at >= CURRENT_DATE
-          AND o.created_at <  CURRENT_DATE + INTERVAL '1 day'
+        WHERE ((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::date = (NOW() AT TIME ZONE $1)::date
           AND o.order_status = 'completed'
         GROUP BY o.payment_method
         ORDER BY revenue DESC
-      `),
+      `, [REPORT_TIME_ZONE]),
 
       // Hourly breakdown (completed orders, 0–23)
       pool.query(`
-        SELECT EXTRACT(HOUR FROM o.created_at)::int         AS hour,
+        SELECT EXTRACT(HOUR FROM (o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::int AS hour,
                COUNT(DISTINCT o.order_id)::int              AS order_count,
                COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS revenue
         FROM "order" o
         LEFT JOIN order_items oi ON oi.order_id = o.order_id
-        WHERE o.created_at >= CURRENT_DATE
-          AND o.created_at <  CURRENT_DATE + INTERVAL '1 day'
+        WHERE ((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::date = (NOW() AT TIME ZONE $1)::date
           AND o.order_status = 'completed'
         GROUP BY hour
         ORDER BY hour
-      `),
+      `, [REPORT_TIME_ZONE]),
 
       // Top 8 selling items by quantity (all orders today, any status)
       pool.query(`
@@ -68,12 +69,11 @@ export async function GET() {
         FROM order_items oi
         JOIN menu_item mi ON mi.menu_item_id = oi.menu_item_id
         JOIN "order" o    ON o.order_id = oi.order_id
-        WHERE o.created_at >= CURRENT_DATE
-          AND o.created_at <  CURRENT_DATE + INTERVAL '1 day'
+        WHERE ((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE $1)::date = (NOW() AT TIME ZONE $1)::date
         GROUP BY mi.name
         ORDER BY qty DESC
         LIMIT 8
-      `),
+      `, [REPORT_TIME_ZONE]),
     ]);
 
     return NextResponse.json({
@@ -83,6 +83,10 @@ export async function GET() {
       hourly: hourly.rows,
       topItems: topItems.rows,
       generatedAt: new Date().toISOString(),
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     });
   } catch (err) {
     console.error(err);
