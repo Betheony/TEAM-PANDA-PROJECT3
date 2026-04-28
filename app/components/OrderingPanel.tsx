@@ -51,12 +51,17 @@ interface CartItem {
   price: number;
   quantity: number;
   toppings: CartTopping[];
+  size: string;
+  ice_level: string;
+  sugar_level: string;
 }
 
 interface Props {
   onOrderPlaced?: (orderId: number) => void;
   showImages?: boolean;
 }
+
+type MenuCategory = "hot" | "cold" | "special";
 
 /*
   English source of truth for static text.
@@ -74,9 +79,20 @@ const orderScreenText_English_Static = {
   total: "total",
   order: "Order",
   search_menu: "Search the menu for a beverage",
+  jump_to: "jump to",
+  all_categories: "all categories",
   order_placed: "Order placed!",
   clear_cart: "clear cart",
   toppings: "toppings",
+  size: "size",
+  small: "small",
+  medium: "medium",
+  large: "large",
+  ice_level: "ice level",
+  sugar_level: "sugar level",
+  hot: "hot",
+  cold: "cold",
+  special: "special",
   qty: "qty",
   add_to_order: "add to order",
   no_items_match: "no items match",
@@ -84,12 +100,65 @@ const orderScreenText_English_Static = {
   cash: "cash",
 };
 
+const CUSTOMIZATION_LEVELS = ["100%", "75%", "50%", "25%", "0%"] as const;
+const DRINK_SIZES = ["small", "medium", "large"] as const;
+const CATEGORY_ORDER: MenuCategory[] = ["hot", "cold", "special"];
+const HOT_KEYWORDS = ["hot", "chai", "matcha latte", "cocoa", "coffee"];
+const SPECIAL_KEYWORDS = [
+  "special",
+  "smoothie",
+  "slush",
+  "frappe",
+  "yakult",
+  "sparkling",
+  "freeze",
+  "float",
+];
+const SPECIAL_DRINK_NAMES = [
+  "dr. taele's signature smoothie",
+  "christmas milkshake",
+  "bethany's signature",
+  "bethany's ballistic boba bash",
+  "all american",
+];
+const HOT_DRINK_NAMES = ["bamboo", "sakura"];
+const COLD_DRINK_NAMES = ["red bean smoothie"];
+
+function getMenuCategory(item: MenuItem): MenuCategory {
+  const normalizedName = item.name.toLowerCase();
+
+  if (SPECIAL_DRINK_NAMES.some((name) => normalizedName.includes(name))) {
+    return "special";
+  }
+
+  if (HOT_DRINK_NAMES.some((name) => normalizedName.includes(name))) {
+    return "hot";
+  }
+
+  if (COLD_DRINK_NAMES.some((name) => normalizedName.includes(name))) {
+    return "cold";
+  }
+
+  if (SPECIAL_KEYWORDS.some((keyword) => normalizedName.includes(keyword))) {
+    return "special";
+  }
+
+  if (HOT_KEYWORDS.some((keyword) => normalizedName.includes(keyword))) {
+    return "hot";
+  }
+
+  return "cold";
+}
+
 export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
+  const [drinkSize, setDrinkSize] = useState<(typeof DRINK_SIZES)[number]>("medium");
+  const [iceLevel, setIceLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
+  const [sugarLevel, setSugarLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
   const [itemQty, setItemQty] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("card");
   const [placing, setPlacing] = useState(false);
@@ -97,7 +166,14 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<"all" | MenuCategory>("all");
   const searchRef = useRef<HTMLInputElement>(null);
+  const menuScrollRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<MenuCategory, HTMLDivElement | null>>({
+    hot: null,
+    cold: null,
+    special: null,
+  });
 
   /*
     Tracks which language the UI is currently showing.
@@ -249,6 +325,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
     setSelectedToppings([]);
+    setDrinkSize("medium");
+    setIceLevel("100%");
+    setSugarLevel("100%");
     setItemQty(1);
   };
 
@@ -279,7 +358,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
     const key = `${selectedItem.menu_item_id}-${[...selectedToppings]
       .sort()
-      .join(",")}`;
+      .join(",")}-${drinkSize}-${iceLevel}-${sugarLevel}`;
 
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
@@ -300,6 +379,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           price: Number(selectedItem.price),
           quantity: itemQty,
           toppings: cartToppings,
+          size: drinkSize,
+          ice_level: iceLevel,
+          sugar_level: sugarLevel,
         },
       ];
     });
@@ -341,6 +423,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
             menu_item_id: c.menu_item_id,
             quantity: c.quantity,
             unit_price: c.price,
+            size: c.size,
+            ice_level: c.ice_level,
+            sugar_level: c.sugar_level,
             toppings: c.toppings.map((t) => ({
               topping_id: t.topping_id,
               name: t.name,
@@ -385,6 +470,29 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       })
     : menuItems;
 
+  const categorizedItems = CATEGORY_ORDER.map((category) => ({
+    category,
+    items: filtered.filter(
+      (item) =>
+        getMenuCategory(item) === category &&
+        (activeCategoryFilter === "all" || activeCategoryFilter === category)
+    ),
+  })).filter((section) => section.items.length > 0);
+
+  const jumpToCategory = (category: "all" | MenuCategory) => {
+    setActiveCategoryFilter(category);
+
+    if (category === "all") {
+      menuScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    sectionRefs.current[category]?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -401,62 +509,103 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       />
 
       <div className="flex-1 flex flex-col min-h-0 gap-3">
-        <input
-          ref={searchRef}
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={orderScreenText_Static.search_menu}
-          className="w-full border border-boba-border rounded-xl px-4 py-2 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:border-boba-accent placeholder:text-boba-muted shrink-0"
-        />
+        <div className="sticky top-0 z-10 space-y-2 bg-boba-bg pb-1">
+          <input
+            ref={searchRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={orderScreenText_Static.search_menu}
+            className="w-full border border-boba-border rounded-xl px-4 py-2 text-sm text-boba-primary bg-boba-surface focus:outline-none focus:border-boba-accent placeholder:text-boba-muted shrink-0"
+          />
+
+          <div className="flex items-center gap-3 rounded-xl border border-boba-border bg-boba-surface px-4 py-2">
+            <label
+              htmlFor="category-jump"
+              className="shrink-0 text-xs font-medium uppercase tracking-wide text-boba-secondary"
+            >
+              {orderScreenText_Static.jump_to}
+            </label>
+            <select
+              id="category-jump"
+              value={activeCategoryFilter}
+              onChange={(e) => jumpToCategory(e.target.value as "all" | MenuCategory)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-boba-primary focus:outline-none"
+            >
+              <option value="all">{orderScreenText_Static.all_categories}</option>
+              {CATEGORY_ORDER.map((category) => (
+                <option key={category} value={category}>
+                  {orderScreenText_Static[category]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {error && <p className="text-red-400 text-sm shrink-0">{error}</p>}
 
-        <div className="flex-1 overflow-y-auto">
-          <div
-            className={`grid gap-2 ${
-              showImages
-                ? "grid-cols-2 lg:grid-cols-3"
-                : "grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-            }`}
-          >
-            {filtered.map((item) => (
-              <button
-                key={item.menu_item_id}
-                onClick={() => openModal(item)}
-                className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95"
-              >
-                {showImages &&
-                  (item.image_url?.trim() ? (
-                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
-                      <img
-                        src={item.image_url}
-                        alt={displayMenuItemName(item)}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-40 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
-                      🧋
-                    </div>
-                  ))}
+        <div ref={menuScrollRef} className="flex-1 overflow-y-auto scroll-smooth">
+          {categorizedItems.length === 0 ? (
+            <p className="text-center text-boba-muted text-sm py-8">
+              {orderScreenText_Static.no_items_match} &quot;{search}&quot;
+            </p>
+          ) : (
+            <div className="space-y-5 pb-2">
+              {categorizedItems.map((section) => (
+                <section
+                  key={section.category}
+                  ref={(node) => {
+                    sectionRefs.current[section.category] = node;
+                  }}
+                >
+                  <div className="sticky top-0 z-10 mb-2 rounded-xl border border-boba-border bg-boba-surface/95 px-4 py-2 backdrop-blur">
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-boba-secondary">
+                      {orderScreenText_Static[section.category]}
+                    </h3>
+                  </div>
 
-                <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
-                  {displayMenuItemName(item)}
-                </p>
+                  <div
+                    className={`grid gap-2 ${
+                      showImages
+                        ? "grid-cols-2 lg:grid-cols-3"
+                        : "grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    }`}
+                  >
+                    {section.items.map((item) => (
+                      <button
+                        key={item.menu_item_id}
+                        onClick={() => openModal(item)}
+                        className="bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-boba-subtle rounded-xl p-3 text-left transition-colors active:scale-95 min-h-[24rem] flex flex-col justify-center"
+                      >
+                        {showImages &&
+                          (item.image_url?.trim() ? (
+                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle overflow-hidden">
+                              <img
+                                src={item.image_url}
+                                alt={displayMenuItemName(item)}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-56 rounded-lg mb-3 bg-boba-subtle flex items-center justify-center text-4xl">
+                              🧋
+                            </div>
+                          ))}
 
-                <p className="text-boba-accent text-sm font-semibold">
-                  ${Number(item.price).toFixed(2)}
-                </p>
-              </button>
-            ))}
+                        <p className="text-boba-primary text-sm font-medium leading-tight line-clamp-2 mb-1">
+                          {displayMenuItemName(item)}
+                        </p>
 
-            {filtered.length === 0 && (
-              <p className="col-span-full text-center text-boba-muted text-sm py-8">
-                {orderScreenText_Static.no_items_match} "{search}"
-              </p>
-            )}
-          </div>
+                        <p className="text-boba-accent text-sm font-semibold">
+                          ${Number(item.price).toFixed(2)}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -493,6 +642,10 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                             .join(", ")}
                         </p>
                       )}
+
+                      <p className="text-xs text-boba-muted truncate">
+                        {orderScreenText_Static.size}: {item.size} • {orderScreenText_Static.ice_level}: {item.ice_level} • {orderScreenText_Static.sugar_level}: {item.sugar_level}
+                      </p>
                     </div>
 
                     <p className="text-boba-accent text-sm shrink-0 ml-1">
@@ -630,6 +783,72 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                 </div>
               </div>
             )}
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.size}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {DRINK_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setDrinkSize(size)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      drinkSize === size
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {orderScreenText_Static[size]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.ice_level}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {CUSTOMIZATION_LEVELS.map((level) => (
+                  <button
+                    key={`ice-${level}`}
+                    onClick={() => setIceLevel(level)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      iceLevel === level
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.sugar_level}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {CUSTOMIZATION_LEVELS.map((level) => (
+                  <button
+                    key={`sugar-${level}`}
+                    onClick={() => setSugarLevel(level)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      sugarLevel === level
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="flex items-center justify-between mb-5">
               <p className="text-boba-secondary text-xs uppercase tracking-wide">

@@ -10,6 +10,9 @@ type OrderPayload = {
     menu_item_id: number;
     quantity: number;
     unit_price: number;
+    size?: string;
+    ice_level?: string;
+    sugar_level?: string;
     toppings?: Array<{
       topping_id: number;
       topping_qty: number;
@@ -22,6 +25,12 @@ type RecipeSchema = {
   menuItemColumn: string;
   quantityColumn: string;
 } | null;
+
+type OrderItemCustomizationSchema = {
+  sizeColumn: string | null;
+  iceLevelColumn: string | null;
+  sugarLevelColumn: string | null;
+};
 
 async function getTableColumns(client: DbClient, tableName: string) {
   const result = await client.query<{ column_name: string }>(
@@ -56,6 +65,18 @@ async function resolveRecipeSchema(client: DbClient): Promise<RecipeSchema> {
     ingredientColumn,
     menuItemColumn,
     quantityColumn,
+  };
+}
+
+async function resolveOrderItemCustomizationSchema(
+  client: DbClient
+): Promise<OrderItemCustomizationSchema> {
+  const orderItemColumns = await getTableColumns(client, 'order_items');
+
+  return {
+    sizeColumn: pickColumn(orderItemColumns, ['size']),
+    iceLevelColumn: pickColumn(orderItemColumns, ['ice_level']),
+    sugarLevelColumn: pickColumn(orderItemColumns, ['sugar_level']),
   };
 }
 
@@ -102,17 +123,31 @@ async function deductRecipeInventory(
 
 export async function GET() {
   try {
-    const result = await pool.query(`
-      SELECT
-        o.order_id, o.created_at, o.payment_method, o.order_status,
-        COALESCE(json_agg(
-          json_build_object(
-            'order_items_id', oi.order_items_id,
-            'menu_item_id', oi.menu_item_id,
-            'menu_item_name', mi.name,
-            'quantity', oi.quantity,
-            'unit_price', oi.unit_price,
-            'toppings', (
+    const client = await pool.connect();
+    try {
+      const customizationSchema = await resolveOrderItemCustomizationSchema(client);
+      const selectFields = [
+        `'order_items_id', oi.order_items_id`,
+        `'menu_item_id', oi.menu_item_id`,
+        `'menu_item_name', mi.name`,
+        `'quantity', oi.quantity`,
+        `'unit_price', oi.unit_price`,
+        `'size', ${
+          customizationSchema.sizeColumn
+            ? `oi."${customizationSchema.sizeColumn}"`
+            : `'medium'`
+        }`,
+        `'ice_level', ${
+          customizationSchema.iceLevelColumn
+            ? `oi."${customizationSchema.iceLevelColumn}"`
+            : `'100%'`
+        }`,
+        `'sugar_level', ${
+          customizationSchema.sugarLevelColumn
+            ? `oi."${customizationSchema.sugarLevelColumn}"`
+            : `'100%'`
+        }`,
+        `'toppings', (
               SELECT COALESCE(json_agg(json_build_object(
                 'topping_id', t.topping_id,
                 'name', t.name,
@@ -121,7 +156,15 @@ export async function GET() {
               FROM order_item_toppings oit
               JOIN topping t ON t.topping_id = oit.topping_id
               WHERE oit.order_items_id = oi.order_items_id
-            )
+            )`,
+      ];
+
+      const result = await client.query(`
+      SELECT
+        o.order_id, o.created_at, o.payment_method, o.order_status,
+        COALESCE(json_agg(
+          json_build_object(
+            ${selectFields.join(',\n            ')}
           )
         ) FILTER (WHERE oi.order_items_id IS NOT NULL), '[]'::json) AS items
       FROM "order" o
@@ -131,7 +174,10 @@ export async function GET() {
       ORDER BY o.created_at DESC
       LIMIT 200
     `);
-    return NextResponse.json(result.rows);
+      return NextResponse.json(result.rows);
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -144,6 +190,7 @@ export async function POST(req: NextRequest) {
   try {
     await client.query('BEGIN');
     const recipeSchema = await resolveRecipeSchema(client);
+    const customizationSchema = await resolveOrderItemCustomizationSchema(client);
 
     // ── 1. Aggregate required ingredient quantities across all order items ──
     // Collect recipe requirements
@@ -225,10 +272,35 @@ export async function POST(req: NextRequest) {
     const order = orderResult.rows[0];
 
     for (const item of items) {
+      const insertColumns = ['order_id', 'menu_item_id', 'quantity', 'unit_price'];
+      const insertValues: Array<string | number> = [
+        order.order_id,
+        item.menu_item_id,
+        item.quantity,
+        item.unit_price,
+      ];
+
+      if (customizationSchema.iceLevelColumn) {
+        insertColumns.push(customizationSchema.iceLevelColumn);
+        insertValues.push(item.ice_level ?? '100%');
+      }
+
+      if (customizationSchema.sizeColumn) {
+        insertColumns.push(customizationSchema.sizeColumn);
+        insertValues.push(item.size ?? 'medium');
+      }
+
+      if (customizationSchema.sugarLevelColumn) {
+        insertColumns.push(customizationSchema.sugarLevelColumn);
+        insertValues.push(item.sugar_level ?? '100%');
+      }
+
+      const placeholders = insertColumns.map((_, index) => `$${index + 1}`).join(', ');
+
       const itemResult = await client.query(
-        `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price)
-         VALUES ($1, $2, $3, $4) RETURNING order_items_id`,
-        [order.order_id, item.menu_item_id, item.quantity, item.unit_price]
+        `INSERT INTO order_items (${insertColumns.join(', ')})
+         VALUES (${placeholders}) RETURNING order_items_id`,
+        insertValues
       );
       const { order_items_id } = itemResult.rows[0];
 
