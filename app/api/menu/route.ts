@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+const MENU_CATEGORIES = new Set(['hot', 'cold', 'special']);
+
+async function getMenuItemColumns() {
+  const result = await pool.query<{ column_name: string }>(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'menu_item'`
+  );
+
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+function normalizeCategory(category: unknown) {
+  return typeof category === 'string' && MENU_CATEGORIES.has(category)
+    ? category
+    : 'cold';
+}
+
 export async function GET() {
   try {
     const [items, toppings] = await Promise.all([
@@ -34,18 +52,32 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, price, image_url, recipe } = await req.json();
+  const { name, price, image_url, category, recipe } = await req.json();
   if (!name?.trim() || price === undefined) {
     return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
   }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const menuItemColumns = await getMenuItemColumns();
+    const columns = ['name', 'price', 'image_url'];
+    const values: Array<string | number | null> = [
+      name.trim(),
+      Number(price),
+      image_url?.trim() || null,
+    ];
+
+    if (menuItemColumns.has('category')) {
+      columns.push('category');
+      values.push(normalizeCategory(category));
+    }
+
+    const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
     const itemResult = await client.query(
-      `INSERT INTO menu_item (name, price, image_url)
-       VALUES ($1, $2, $3)
+      `INSERT INTO menu_item (${columns.join(', ')})
+       VALUES (${placeholders})
        RETURNING *`,
-      [name.trim(), Number(price), image_url?.trim() || null]
+      values
     );
     const newItem = itemResult.rows[0];
     // recipe is an array of { ingredient_id, qty_needed }

@@ -19,6 +19,7 @@ interface MenuItem {
 
   image_url: string | null;
   price: number;
+  category?: MenuCategory;
 }
 
 interface Topping {
@@ -125,6 +126,10 @@ const HOT_DRINK_NAMES = ["bamboo", "sakura"];
 const COLD_DRINK_NAMES = ["red bean smoothie"];
 
 function getMenuCategory(item: MenuItem): MenuCategory {
+  if (item.category && CATEGORY_ORDER.includes(item.category)) {
+    return item.category;
+  }
+
   const normalizedName = item.name.toLowerCase();
 
   if (SPECIAL_DRINK_NAMES.some((name) => normalizedName.includes(name))) {

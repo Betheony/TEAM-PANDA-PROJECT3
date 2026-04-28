@@ -1,22 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+const MENU_CATEGORIES = new Set(['hot', 'cold', 'special']);
+
+async function getMenuItemColumns() {
+  const result = await pool.query<{ column_name: string }>(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'menu_item'`
+  );
+
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+function normalizeCategory(category: unknown) {
+  return typeof category === 'string' && MENU_CATEGORIES.has(category)
+    ? category
+    : 'cold';
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { name, price, image_url, recipe } = await req.json();
+  const { name, price, image_url, category, recipe } = await req.json();
   if (!name?.trim() || price === undefined) {
     return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
   }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const menuItemColumns = await getMenuItemColumns();
+    const setClauses = ['name = $1', 'price = $2', 'image_url = $3'];
+    const values: Array<string | number | null> = [
+      name.trim(),
+      Number(price),
+      image_url?.trim() || null,
+    ];
+
+    if (menuItemColumns.has('category')) {
+      values.push(normalizeCategory(category));
+      setClauses.push(`category = $${values.length}`);
+    }
+
+    values.push(id);
     const result = await client.query(
-      `UPDATE menu_item SET name = $1, price = $2, image_url = $3
-       WHERE menu_item_id = $4 RETURNING *`,
-      [name.trim(), Number(price), image_url?.trim() || null, id]
+      `UPDATE menu_item SET ${setClauses.join(', ')}
+       WHERE menu_item_id = $${values.length} RETURNING *`,
+      values
     );
     if (result.rows.length === 0) {
       await client.query('ROLLBACK');

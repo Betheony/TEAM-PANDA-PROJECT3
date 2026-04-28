@@ -50,8 +50,13 @@ interface MenuItem {
   name: string;
   price: number;
   image_url: string | null;
+  category?: MenuCategory;
   recipe?: RecipeIngredient[];
 }
+
+type MenuCategory = "hot" | "cold" | "special";
+
+const MENU_CATEGORY_OPTIONS: MenuCategory[] = ["hot", "cold", "special"];
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-50 text-yellow-700 border border-yellow-200",
@@ -138,11 +143,21 @@ export default function ManagerView({ employee, onLogout }: Props) {
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showMenuModal, setShowMenuModal] = useState(false);
-  const [menuForm, setMenuForm] = useState({ name: "", price: "", image_url: "" });
+  const [menuForm, setMenuForm] = useState<{ name: string; price: string; image_url: string; category: MenuCategory }>({
+    name: "",
+    price: "",
+    image_url: "",
+    category: "cold",
+  });
   const [menuRecipe, setMenuRecipe] = useState<Record<number, string>>({});
   const [addingMenuItem, setAddingMenuItem] = useState(false);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
-  const [editMenuForm, setEditMenuForm] = useState({ name: "", price: "", image_url: "" });
+  const [editMenuForm, setEditMenuForm] = useState<{ name: string; price: string; image_url: string; category: MenuCategory }>({
+    name: "",
+    price: "",
+    image_url: "",
+    category: "cold",
+  });
   const [editMenuRecipe, setEditMenuRecipe] = useState<Record<number, string>>({});
   const [savingMenuItem, setSavingMenuItem] = useState(false);
   const [deletingMenuId, setDeletingMenuId] = useState<number | null>(null);
@@ -343,11 +358,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
           name: menuForm.name,
           price: Number(menuForm.price),
           image_url: menuForm.image_url || null,
+          category: menuForm.category,
           recipe,
         }),
       });
       if (!res.ok) throw new Error("Failed to add menu item");
-      setMenuForm({ name: "", price: "", image_url: "" });
+      setMenuForm({ name: "", price: "", image_url: "", category: "cold" });
       setMenuRecipe({});
       setShowMenuModal(false);
       fetchMenuItems();
@@ -376,6 +392,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
           name: editMenuForm.name,
           price: Number(editMenuForm.price),
           image_url: editMenuForm.image_url || null,
+          category: editMenuForm.category,
           recipe,
         }),
       });
@@ -883,6 +900,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold text-boba-secondary">ID</th>
                     <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Category</th>
                     <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Price</th>
                     <th className="text-left px-4 py-3 font-semibold text-boba-secondary">Image</th>
                     <th className="px-4 py-3"></th>
@@ -893,6 +911,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
                     <tr key={item.menu_item_id} className={`border-b border-boba-border ${idx % 2 === 0 ? "" : "bg-boba-subtle/60"}`}>
                       <td className="px-4 py-3 text-boba-muted">{item.menu_item_id}</td>
                       <td className="px-4 py-3 font-medium text-boba-primary">{item.name}</td>
+                      <td className="px-4 py-3 text-boba-muted capitalize">{item.category ?? "cold"}</td>
                       <td className="px-4 py-3 text-boba-accent font-semibold">${Number(item.price).toFixed(2)}</td>
                       <td className="px-4 py-3 text-boba-muted text-xs">{item.image_url || "—"}</td>
                       <td className="px-4 py-3">
@@ -900,7 +919,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
                           <button
                             onClick={() => {
                               setEditingMenuItem(item);
-                              setEditMenuForm({ name: item.name, price: String(item.price), image_url: item.image_url ?? "" });
+                              setEditMenuForm({
+                                name: item.name,
+                                price: String(item.price),
+                                image_url: item.image_url ?? "",
+                                category: item.category ?? "cold",
+                              });
                               setEditMenuRecipe(
                                 Object.fromEntries(
                                   (item.recipe ?? []).map((row) => [
@@ -977,6 +1001,20 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         onChange={(e) => setEditMenuForm((p) => ({ ...p, price: e.target.value }))}
                         className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Category *</label>
+                      <select
+                        value={editMenuForm.category}
+                        onChange={(e) => setEditMenuForm((p) => ({ ...p, category: e.target.value as MenuCategory }))}
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                      >
+                        {MENU_CATEGORY_OPTIONS.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs text-boba-secondary font-medium mb-1">Image URL <span className="font-normal text-boba-muted">(optional)</span></label>
@@ -1066,6 +1104,20 @@ export default function ManagerView({ employee, onLogout }: Props) {
                         onChange={(e) => setMenuForm((p) => ({ ...p, price: e.target.value }))}
                         className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-boba-secondary font-medium mb-1">Category *</label>
+                      <select
+                        value={menuForm.category}
+                        onChange={(e) => setMenuForm((p) => ({ ...p, category: e.target.value as MenuCategory }))}
+                        className="w-full border border-boba-border rounded-lg px-3 py-2 text-sm text-boba-primary bg-boba-bg focus:outline-none focus:ring-1 focus:ring-boba-accent"
+                      >
+                        {MENU_CATEGORY_OPTIONS.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs text-boba-secondary font-medium mb-1">Image URL <span className="font-normal text-boba-muted">(optional)</span></label>
