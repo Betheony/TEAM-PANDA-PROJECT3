@@ -11,6 +11,13 @@ interface WeatherSummary {
   label: string;
 }
 
+interface BrowserPosition {
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  location: string;
+}
+
 const weatherLabels: Record<number, string> = {
   0: "Clear",
   1: "Mostly clear",
@@ -49,7 +56,7 @@ export default function CustomerView() {
       name: "Austin",
     };
 
-    const loadWeather = (
+    const loadWeather = async (
       latitude: number,
       longitude: number,
       timezone: string,
@@ -66,54 +73,92 @@ export default function CustomerView() {
         forecast_days: "1",
       }).toString();
 
-      fetch(url, { signal: controller.signal })
-        .then((res) => {
-          if (!res.ok) throw new Error("Weather unavailable");
-          return res.json();
-        })
-        .then((data) => {
-          const code = Number(data.current?.weather_code);
-          setWeather({
-            location,
-            temp: Math.round(Number(data.current?.temperature_2m)),
-            high: Math.round(Number(data.daily?.temperature_2m_max?.[0])),
-            low: Math.round(Number(data.daily?.temperature_2m_min?.[0])),
-            label: weatherLabels[code] ?? "Forecast",
-          });
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setWeather(null);
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setWeatherLoading(false);
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) throw new Error("Weather unavailable");
+      const data = await res.json();
+      const code = Number(data.current?.weather_code);
+
+      if (!controller.signal.aborted) {
+        setWeather({
+          location,
+          temp: Math.round(Number(data.current?.temperature_2m)),
+          high: Math.round(Number(data.daily?.temperature_2m_max?.[0])),
+          low: Math.round(Number(data.daily?.temperature_2m_min?.[0])),
+          label: weatherLabels[code] ?? "Forecast",
         });
+      }
     };
 
-    const loadFallbackWeather = () => {
-      loadWeather(
-        fallbackLocation.latitude,
-        fallbackLocation.longitude,
-        fallbackLocation.timezone,
-        fallbackLocation.name
-      );
+    const getBrowserPosition = () =>
+      new Promise<BrowserPosition>((resolve, reject) => {
+        if (!navigator.geolocation || !window.isSecureContext) {
+          reject(new Error("Browser location unavailable"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "auto",
+              location: "Local",
+            });
+          },
+          reject,
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000,
+          }
+        );
+      });
+
+    const getIpPosition = async (): Promise<BrowserPosition> => {
+      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      if (!res.ok) throw new Error("IP location unavailable");
+      const data = await res.json();
+      const latitude = Number(data.latitude);
+      const longitude = Number(data.longitude);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error("IP location missing coordinates");
+      }
+
+      return {
+        latitude,
+        longitude,
+        timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "auto",
+        location: data.city || "Local",
+      };
     };
 
-    if (!navigator.geolocation) {
-      loadFallbackWeather();
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          loadWeather(
-            position.coords.latitude,
-            position.coords.longitude,
-            Intl.DateTimeFormat().resolvedOptions().timeZone || "auto",
-            "Local"
+    const loadCustomerWeather = async () => {
+      try {
+        const position = await getBrowserPosition().catch(getIpPosition);
+        await loadWeather(
+          position.latitude,
+          position.longitude,
+          position.timezone,
+          position.location
+        );
+      } catch {
+        try {
+          await loadWeather(
+            fallbackLocation.latitude,
+            fallbackLocation.longitude,
+            fallbackLocation.timezone,
+            fallbackLocation.name
           );
-        },
-        loadFallbackWeather,
-        { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 5000 }
-      );
-    }
+        } catch {
+          if (!controller.signal.aborted) setWeather(null);
+        }
+      } finally {
+        if (!controller.signal.aborted) setWeatherLoading(false);
+      }
+    };
+
+    loadCustomerWeather();
 
     return () => controller.abort();
   }, []);
