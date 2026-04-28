@@ -60,9 +60,9 @@ function normalizeDrinkCustomization(
     sugar_level: schema.hasSugarLevel && ['0%', '50%', '100%'].includes(item.sugar_level ?? '')
       ? item.sugar_level
       : '100%',
-    ice_level: schema.hasIceLevel && ['hot', 'less ice', 'more ice'].includes(item.ice_level ?? '')
+    ice_level: schema.hasIceLevel && ['less ice', 'regular ice', 'more ice'].includes(item.ice_level ?? '')
       ? item.ice_level
-      : 'less ice',
+      : 'regular ice',
   };
 }
 
@@ -73,7 +73,7 @@ export async function GET() {
       const customizationSchema = await resolveOrderItemCustomizationSchema(client);
       const sizeField = customizationSchema.hasSize ? `'size', oi.size,` : `'size', 'medium',`;
       const sugarField = customizationSchema.hasSugarLevel ? `'sugar_level', oi.sugar_level,` : `'sugar_level', '100%',`;
-      const iceField = customizationSchema.hasIceLevel ? `'ice_level', oi.ice_level,` : `'ice_level', 'less ice',`;
+      const iceField = customizationSchema.hasIceLevel ? `'ice_level', oi.ice_level,` : `'ice_level', 'regular ice',`;
 
       const result = await client.query(`
         SELECT

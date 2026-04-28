@@ -432,7 +432,7 @@ export default function ManagerView({ employee, onLogout }: Props) {
     managerText[method as keyof typeof managerTextEnglish] ?? method;
 
   const customizationLabel = (item: OrderItem) =>
-    `${item.size ?? "medium"}, ${item.sugar_level ?? "100%"} sugar, ${item.ice_level ?? "less ice"}`;
+    `${item.size ?? "medium"}, ${item.sugar_level ?? "100%"} sugar, ${item.ice_level ?? "regular ice"}`;
 
   async function loadTranslation() {
     const shouldSwitchToSpanish = !isSpanish;

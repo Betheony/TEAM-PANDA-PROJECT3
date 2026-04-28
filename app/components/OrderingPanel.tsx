@@ -92,11 +92,11 @@ const orderScreenText_English_Static = {
 
 type DrinkSize = "medium" | "large";
 type SugarLevel = "0%" | "50%" | "100%";
-type IceLevel = "hot" | "less ice" | "more ice";
+type IceLevel = "less ice" | "regular ice" | "more ice";
 
 const SIZE_OPTIONS: DrinkSize[] = ["medium", "large"];
 const SUGAR_OPTIONS: SugarLevel[] = ["0%", "50%", "100%"];
-const ICE_OPTIONS: IceLevel[] = ["hot", "less ice", "more ice"];
+const ICE_OPTIONS: IceLevel[] = ["less ice", "regular ice", "more ice"];
 
 export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -106,7 +106,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
   const [selectedSize, setSelectedSize] = useState<DrinkSize>("medium");
   const [selectedSugarLevel, setSelectedSugarLevel] = useState<SugarLevel>("100%");
-  const [selectedIceLevel, setSelectedIceLevel] = useState<IceLevel>("less ice");
+  const [selectedIceLevel, setSelectedIceLevel] = useState<IceLevel>("regular ice");
   const [itemQty, setItemQty] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("card");
   const [placing, setPlacing] = useState(false);
@@ -268,7 +268,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
     setSelectedToppings([]);
     setSelectedSize("medium");
     setSelectedSugarLevel("100%");
-    setSelectedIceLevel("less ice");
+    setSelectedIceLevel("regular ice");
     setItemQty(1);
   };
 
@@ -618,7 +618,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
         >
-          <div className="bg-boba-surface rounded-2xl p-6 w-full max-w-xs shadow-2xl border border-boba-border">
+          <div className="bg-boba-surface rounded-2xl p-6 w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl border border-boba-border">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg text-boba-primary font-medium">
