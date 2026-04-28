@@ -17,6 +17,8 @@ interface OrderItem {
   menu_item_name: string;
   quantity: number;
   unit_price: number;
+  ice_level?: string;
+  sugar_level?: string;
   toppings: { name: string }[];
 }
 
@@ -611,7 +613,12 @@ export default function ManagerView({ employee, onLogout }: Props) {
                             {new Date(order.created_at).toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-boba-primary max-w-xs">
-                            {order.items.map((i) => `${i.quantity}× ${i.menu_item_name}`).join(", ")}
+                            {order.items
+                              .map(
+                                (i) =>
+                                  `${i.quantity}× ${i.menu_item_name} (ice ${i.ice_level ?? "100%"}, sugar ${i.sugar_level ?? "100%"})`
+                              )
+                              .join(", ")}
                           </td>
                           <td className="px-4 py-3 capitalize text-boba-secondary">
                             {paymentLabel(order.payment_method)}

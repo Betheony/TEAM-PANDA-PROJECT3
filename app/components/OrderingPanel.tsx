@@ -51,6 +51,8 @@ interface CartItem {
   price: number;
   quantity: number;
   toppings: CartTopping[];
+  ice_level: string;
+  sugar_level: string;
 }
 
 interface Props {
@@ -77,6 +79,8 @@ const orderScreenText_English_Static = {
   order_placed: "Order placed!",
   clear_cart: "clear cart",
   toppings: "toppings",
+  ice_level: "ice level",
+  sugar_level: "sugar level",
   qty: "qty",
   add_to_order: "add to order",
   no_items_match: "no items match",
@@ -84,12 +88,16 @@ const orderScreenText_English_Static = {
   cash: "cash",
 };
 
+const CUSTOMIZATION_LEVELS = ["100%", "75%", "50%", "25%", "0%"] as const;
+
 export default function OrderingPanel({ onOrderPlaced, showImages = true }: Props) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
+  const [iceLevel, setIceLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
+  const [sugarLevel, setSugarLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
   const [itemQty, setItemQty] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("card");
   const [placing, setPlacing] = useState(false);
@@ -249,6 +257,8 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
     setSelectedToppings([]);
+    setIceLevel("100%");
+    setSugarLevel("100%");
     setItemQty(1);
   };
 
@@ -279,7 +289,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
     const key = `${selectedItem.menu_item_id}-${[...selectedToppings]
       .sort()
-      .join(",")}`;
+      .join(",")}-${iceLevel}-${sugarLevel}`;
 
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
@@ -300,6 +310,8 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
           price: Number(selectedItem.price),
           quantity: itemQty,
           toppings: cartToppings,
+          ice_level: iceLevel,
+          sugar_level: sugarLevel,
         },
       ];
     });
@@ -341,6 +353,8 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
             menu_item_id: c.menu_item_id,
             quantity: c.quantity,
             unit_price: c.price,
+            ice_level: c.ice_level,
+            sugar_level: c.sugar_level,
             toppings: c.toppings.map((t) => ({
               topping_id: t.topping_id,
               name: t.name,
@@ -453,7 +467,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
             {filtered.length === 0 && (
               <p className="col-span-full text-center text-boba-muted text-sm py-8">
-                {orderScreenText_Static.no_items_match} "{search}"
+                {orderScreenText_Static.no_items_match} &quot;{search}&quot;
               </p>
             )}
           </div>
@@ -493,6 +507,10 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                             .join(", ")}
                         </p>
                       )}
+
+                      <p className="text-xs text-boba-muted truncate">
+                        {orderScreenText_Static.ice_level}: {item.ice_level} • {orderScreenText_Static.sugar_level}: {item.sugar_level}
+                      </p>
                     </div>
 
                     <p className="text-boba-accent text-sm shrink-0 ml-1">
@@ -630,6 +648,50 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                 </div>
               </div>
             )}
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.ice_level}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {CUSTOMIZATION_LEVELS.map((level) => (
+                  <button
+                    key={`ice-${level}`}
+                    onClick={() => setIceLevel(level)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      iceLevel === level
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-boba-secondary text-xs uppercase tracking-wide mb-2">
+                {orderScreenText_Static.sugar_level}
+              </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                {CUSTOMIZATION_LEVELS.map((level) => (
+                  <button
+                    key={`sugar-${level}`}
+                    onClick={() => setSugarLevel(level)}
+                    className={`px-3 py-2 rounded-lg text-sm text-center transition-colors ${
+                      sugarLevel === level
+                        ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
+                        : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="flex items-center justify-between mb-5">
               <p className="text-boba-secondary text-xs uppercase tracking-wide">
