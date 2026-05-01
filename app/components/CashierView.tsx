@@ -208,7 +208,7 @@ export default function CashierView({ employee, onLogout }: Props) {
       </div>
 
       {/* Content */}
-      <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
+      <main className="flex-1 p-3 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 113px)" }}>
         {tab === "queue" && (
           <AccessibilityMenu
             isTranslationActive={isSpanish}
@@ -256,7 +256,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                           </p>
                           {item.toppings.length > 0 && (
                             <p className="text-xs text-boba-muted ml-4">
-                              + {item.toppings.map((t) => t.name).join(", ")}
+                              + {item.toppings.map((t) => `${t.topping_qty > 1 ? `${t.topping_qty}x ` : ""}${t.name}`).join(", ")}
                             </p>
                           )}
                           <p className="text-xs text-boba-muted ml-4">

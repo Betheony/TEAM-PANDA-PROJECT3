@@ -20,7 +20,7 @@ interface OrderItem {
   size?: string;
   ice_level?: string;
   sugar_level?: string;
-  toppings: { name: string }[];
+  toppings: { name: string; topping_qty?: number }[];
 }
 
 interface Order {

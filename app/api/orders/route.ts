@@ -209,8 +209,11 @@ export async function POST(req: NextRequest) {
       }
 
       for (const topping of item.toppings ?? []) {
+        const toppingCount = Number(topping.topping_qty);
+        if (!Number.isFinite(toppingCount) || toppingCount <= 0) continue;
+
         const toppingRows = await client.query(
-          `SELECT t.name AS topping_name, t.ingredient_id, i.name AS ingredient_name
+          `SELECT t.name AS topping_name, t.qty_needed, t.ingredient_id, i.name AS ingredient_name
            FROM topping t
            JOIN ingredient i ON i.ingredient_id = t.ingredient_id
            WHERE t.topping_id = $1`,
@@ -218,12 +221,12 @@ export async function POST(req: NextRequest) {
         );
 
         if (toppingRows.rows.length > 0) {
-          const { ingredient_id, ingredient_name, topping_name } = toppingRows.rows[0];
+          const { ingredient_id, ingredient_name, topping_name, qty_needed } = toppingRows.rows[0];
           addIngredientNeed(
             needed,
             ingredient_id,
             ingredient_name,
-            topping.topping_qty * item.quantity,
+            toppingCount * Number(qty_needed) * item.quantity,
             `${menuItemName} with ${topping_name}`
           );
         }
@@ -275,10 +278,13 @@ export async function POST(req: NextRequest) {
       );
 
       for (const topping of item.toppings ?? []) {
+        const toppingCount = Number(topping.topping_qty);
+        if (!Number.isFinite(toppingCount) || toppingCount <= 0) continue;
+
         await client.query(
           `INSERT INTO order_item_toppings (order_items_id, topping_id, topping_qty)
            VALUES ($1, $2, $3)`,
-          [orderItemsId, topping.topping_id, topping.topping_qty]
+          [orderItemsId, topping.topping_id, toppingCount]
         );
       }
     }
