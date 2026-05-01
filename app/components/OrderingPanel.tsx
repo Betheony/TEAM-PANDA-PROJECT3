@@ -96,6 +96,8 @@ const orderScreenText_English_Static = {
   special: "special",
   qty: "qty",
   add_to_order: "add to order",
+  update_item: "update item",
+  edit: "edit",
   no_items_match: "no items match",
   card: "card",
   cash: "cash",
@@ -160,7 +162,8 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
   const [toppings, setToppings] = useState<Topping[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
+  const [selectedToppings, setSelectedToppings] = useState<Record<number, number>>({});
+  const [editingCartKey, setEditingCartKey] = useState<string | null>(null);
   const [drinkSize, setDrinkSize] = useState<(typeof DRINK_SIZES)[number]>("medium");
   const [iceLevel, setIceLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
   const [sugarLevel, setSugarLevel] = useState<(typeof CUSTOMIZATION_LEVELS)[number]>("100%");
@@ -329,17 +332,71 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
 
   const openModal = (item: MenuItem) => {
     setSelectedItem(item);
-    setSelectedToppings([]);
+    setSelectedToppings({});
+    setEditingCartKey(null);
     setDrinkSize("medium");
     setIceLevel("100%");
     setSugarLevel("100%");
     setItemQty(1);
   };
 
+  const closeModal = () => {
+    setSelectedItem(null);
+    setEditingCartKey(null);
+  };
+
+  const editCartItem = (item: CartItem) => {
+    const menuItem = menuItems.find((menuItem) => menuItem.menu_item_id === item.menu_item_id) ?? {
+      menu_item_id: item.menu_item_id,
+      name: item.name,
+      translated_name: item.translated_name,
+      image_url: null,
+      price: item.price,
+    };
+
+    setSelectedItem(menuItem);
+    setEditingCartKey(item.key);
+    setSelectedToppings(
+      Object.fromEntries(
+        item.toppings.map((topping) => [topping.topping_id, topping.topping_qty])
+      )
+    );
+    setDrinkSize(
+      DRINK_SIZES.includes(item.size as (typeof DRINK_SIZES)[number])
+        ? (item.size as (typeof DRINK_SIZES)[number])
+        : "medium"
+    );
+    setIceLevel(
+      CUSTOMIZATION_LEVELS.includes(item.ice_level as (typeof CUSTOMIZATION_LEVELS)[number])
+        ? (item.ice_level as (typeof CUSTOMIZATION_LEVELS)[number])
+        : "100%"
+    );
+    setSugarLevel(
+      CUSTOMIZATION_LEVELS.includes(item.sugar_level as (typeof CUSTOMIZATION_LEVELS)[number])
+        ? (item.sugar_level as (typeof CUSTOMIZATION_LEVELS)[number])
+        : "100%"
+    );
+    setItemQty(item.quantity);
+  };
+
   const toggleTopping = (id: number) => {
     setSelectedToppings((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev[id] ? Object.fromEntries(Object.entries(prev).filter(([key]) => Number(key) !== id)) : { ...prev, [id]: 1 }
     );
+  };
+
+  const updateToppingQty = (id: number, delta: number) => {
+    setSelectedToppings((prev) => {
+      const nextQty = Math.max(0, (prev[id] ?? 0) + delta);
+
+      if (nextQty === 0) {
+        return Object.fromEntries(
+          Object.entries(prev).filter(([key]) => Number(key) !== id)
+        );
+      }
+
+      return { ...prev, [id]: nextQty };
+    });
   };
 
   const addToCart = () => {
@@ -353,19 +410,56 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       can still update its displayed language without losing the original names.
     */
     const cartToppings: CartTopping[] = toppings
-      .filter((t) => selectedToppings.includes(t.topping_id))
+      .filter((t) => (selectedToppings[t.topping_id] ?? 0) > 0)
       .map((t) => ({
         topping_id: t.topping_id,
         name: t.name,
         translated_name: t.translated_name,
-        topping_qty: t.qty_needed,
+        topping_qty: selectedToppings[t.topping_id],
       }));
 
-    const key = `${selectedItem.menu_item_id}-${drinkSize}-${iceLevel}-${sugarLevel}-${[...selectedToppings]
-      .sort()
-      .join(",")}`;
+    const toppingKey = Object.entries(selectedToppings)
+      .filter(([, qty]) => qty > 0)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([id, qty]) => `${id}:${qty}`)
+      .join(",");
+    const key = `${selectedItem.menu_item_id}-${drinkSize}-${iceLevel}-${sugarLevel}-${toppingKey}`;
+
+    const nextItem: CartItem = {
+      key,
+      menu_item_id: selectedItem.menu_item_id,
+      name: selectedItem.name,
+      translated_name: selectedItem.translated_name,
+      price: Number(selectedItem.price),
+      quantity: itemQty,
+      toppings: cartToppings,
+      size: drinkSize,
+      ice_level: iceLevel,
+      sugar_level: sugarLevel,
+    };
 
     setCart((prev) => {
+      if (editingCartKey) {
+        const editingIndex = prev.findIndex((c) => c.key === editingCartKey);
+        const remaining = prev.filter((c) => c.key !== editingCartKey);
+        const existing = remaining.find((c) => c.key === key);
+
+        if (existing) {
+          return remaining.map((c) =>
+            c.key === key ? { ...c, quantity: c.quantity + itemQty } : c
+          );
+        }
+
+        const insertIndex =
+          editingIndex >= 0 ? Math.min(editingIndex, remaining.length) : remaining.length;
+
+        return [
+          ...remaining.slice(0, insertIndex),
+          nextItem,
+          ...remaining.slice(insertIndex),
+        ];
+      }
+
       const existing = prev.find((c) => c.key === key);
 
       if (existing) {
@@ -374,24 +468,10 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
         );
       }
 
-      return [
-        ...prev,
-        {
-          key,
-          menu_item_id: selectedItem.menu_item_id,
-          name: selectedItem.name,
-          translated_name: selectedItem.translated_name,
-          price: Number(selectedItem.price),
-          quantity: itemQty,
-          toppings: cartToppings,
-          size: drinkSize,
-          ice_level: iceLevel,
-          sugar_level: sugarLevel,
-        },
-      ];
+      return [...prev, nextItem];
     });
 
-    setSelectedItem(null);
+    closeModal();
     setSearch("");
   };
 
@@ -649,7 +729,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       {item.toppings.length > 0 && (
                         <p className="text-xs text-boba-muted truncate">
                           {item.toppings
-                            .map((t) => displayToppingName(t))
+                            .map((t) =>
+                              `${t.topping_qty > 1 ? `${t.topping_qty}x ` : ""}${displayToppingName(t)}`
+                            )
                             .join(", ")}
                         </p>
                       )}
@@ -681,6 +763,13 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       className="w-6 h-6 rounded-full bg-boba-subtle border border-boba-border hover:border-boba-accent text-boba-primary text-sm flex items-center justify-center transition-colors"
                     >
                       +
+                    </button>
+
+                    <button
+                      onClick={() => editCartItem(item)}
+                      className="text-boba-muted hover:text-boba-primary text-xs transition-colors"
+                    >
+                      {orderScreenText_Static.edit}
                     </button>
 
                     <button
@@ -750,7 +839,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
       {selectedItem && (
         <div
           className="fixed inset-0 bg-boba-primary/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
+          onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
           <div className="bg-boba-surface rounded-2xl p-6 w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl border border-boba-border">
             <div className="flex items-start justify-between mb-4">
@@ -764,7 +853,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
               </div>
 
               <button
-                onClick={() => setSelectedItem(null)}
+                onClick={closeModal}
                 className="text-boba-muted hover:text-boba-primary text-lg leading-none ml-2"
               >
                 ✕
@@ -777,20 +866,50 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                   {orderScreenText_Static.toppings}
                 </p>
 
-                <div className="grid grid-cols-2 gap-1.5">
-                  {toppings.map((t) => (
-                    <button
-                      key={t.topping_id}
-                      onClick={() => toggleTopping(t.topping_id)}
-                      className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                        selectedToppings.includes(t.topping_id)
-                          ? "bg-boba-accent text-[var(--boba-accent-foreground)]"
-                          : "bg-boba-subtle border border-boba-border text-boba-primary hover:border-boba-accent"
-                      }`}
-                    >
-                      {displayToppingName(t)}
-                    </button>
-                  ))}
+                <div className="space-y-1.5">
+                  {toppings.map((t) => {
+                    const selectedQty = selectedToppings[t.topping_id] ?? 0;
+
+                    return (
+                      <div
+                        key={t.topping_id}
+                        className={`flex min-h-11 items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
+                          selectedQty > 0
+                            ? "border-boba-accent bg-boba-accent text-[var(--boba-accent-foreground)]"
+                            : "border-boba-border bg-boba-subtle text-boba-primary"
+                        }`}
+                      >
+                        <button
+                          onClick={() => toggleTopping(t.topping_id)}
+                          className="min-w-0 flex-1 text-left text-sm"
+                        >
+                          {displayToppingName(t)}
+                        </button>
+
+                        {selectedQty > 0 && (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              onClick={() => updateToppingQty(t.topping_id, -1)}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-boba-surface/20 text-base leading-none transition-colors hover:bg-boba-surface/30"
+                              aria-label={`Decrease ${displayToppingName(t)} quantity`}
+                            >
+                              −
+                            </button>
+                            <span className="w-5 text-center text-sm font-medium">
+                              {selectedQty}
+                            </span>
+                            <button
+                              onClick={() => updateToppingQty(t.topping_id, 1)}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-boba-surface/20 text-base leading-none transition-colors hover:bg-boba-surface/30"
+                              aria-label={`Increase ${displayToppingName(t)} quantity`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -891,7 +1010,9 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
               onClick={addToCart}
               className="w-full bg-boba-accent hover:bg-boba-accent-hover text-[var(--boba-accent-foreground)] py-3 rounded-full transition-colors font-medium"
             >
-              {orderScreenText_Static.add_to_order}
+              {editingCartKey
+                ? orderScreenText_Static.update_item
+                : orderScreenText_Static.add_to_order}
             </button>
           </div>
         </div>

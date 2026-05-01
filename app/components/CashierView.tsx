@@ -256,7 +256,7 @@ export default function CashierView({ employee, onLogout }: Props) {
                           </p>
                           {item.toppings.length > 0 && (
                             <p className="text-xs text-boba-muted ml-4">
-                              + {item.toppings.map((t) => t.name).join(", ")}
+                              + {item.toppings.map((t) => `${t.topping_qty > 1 ? `${t.topping_qty}x ` : ""}${t.name}`).join(", ")}
                             </p>
                           )}
                           <p className="text-xs text-boba-muted ml-4">

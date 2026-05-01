@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     // Usage from toppings
     const toppingUsage = await pool.query(`
       SELECT i.ingredient_id,
-             COALESCE(SUM(filtered.topping_qty * filtered.quantity), 0) AS qty_used
+             COALESCE(SUM(filtered.topping_qty * t.qty_needed * filtered.quantity), 0) AS qty_used
       FROM ingredient i
       LEFT JOIN topping t ON t.ingredient_id = i.ingredient_id
       LEFT JOIN (
