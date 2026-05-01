@@ -191,7 +191,7 @@ export default function CustomerView() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 p-6 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 73px)" }}>
+      <main className="flex-1 p-3 min-h-0 overflow-hidden" style={{ height: "calc(100vh - 73px)" }}>
         <div className="flex h-full min-h-0 flex-col gap-4">
           <iframe
             data-testid="embed-iframe"

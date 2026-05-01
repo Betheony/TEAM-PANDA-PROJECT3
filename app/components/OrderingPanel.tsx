@@ -580,11 +580,13 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                       <button
                         key={item.menu_item_id}
                         onClick={() => openModal(item)}
-                        className="group bg-boba-surface border border-boba-border hover:border-boba-accent hover:bg-[var(--menu-card-hover)] rounded-xl p-3 text-left transition-colors active:scale-95 min-h-[24rem] flex flex-col justify-center"
+                        className={`group flex flex-col rounded-xl border border-boba-border bg-boba-surface text-left transition-colors hover:border-boba-accent hover:bg-[var(--menu-card-hover)] active:scale-95 ${
+                          showImages ? "p-2" : "min-h-[5.75rem] p-3"
+                        }`}
                       >
                         {showImages &&
                           (item.image_url?.trim() ? (
-                            <div className="w-full h-56 rounded-lg mb-3 bg-[var(--menu-card-media)] group-hover:bg-[var(--menu-card-media-hover)] overflow-hidden transition-colors">
+                            <div className="mb-2 aspect-[4/3] w-full overflow-hidden rounded-lg bg-[var(--menu-card-media)] transition-colors group-hover:bg-[var(--menu-card-media-hover)]">
                               <img
                                 src={item.image_url}
                                 alt={displayMenuItemName(item)}
@@ -592,7 +594,7 @@ export default function OrderingPanel({ onOrderPlaced, showImages = true }: Prop
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-56 rounded-lg mb-3 bg-[var(--menu-card-media)] group-hover:bg-[var(--menu-card-media-hover)] flex items-center justify-center text-4xl transition-colors">
+                            <div className="mb-2 flex aspect-[4/3] w-full items-center justify-center rounded-lg bg-[var(--menu-card-media)] text-4xl transition-colors group-hover:bg-[var(--menu-card-media-hover)]">
                               🧋
                             </div>
                           ))}
